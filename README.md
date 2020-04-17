@@ -1,2 +1,2 @@
 # LudumDare46
-My game for LudumDare46 (https://ldjam.com/users/alexey-akulovich/games)
+My game for [LudumDare 46](https://ldjam.com/events/ludum-dare/46)
