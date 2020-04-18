@@ -1,16 +1,10 @@
-return function(scene)
+return function(parent)
     local display = display
     local W, H = display.contentWidth, display.contentHeight
-    local self = scene
 
-    function scene:setupLevelPlayer()
+    local function setupLevelPlayer()
 
     end
 
-    self.levelGroup = display.newGroup()
-    self.levelGroup.x = 0
-    self.levelGroup.y = 0
-    self.view:insert(self.levelGroup)
-
-    self:setupLevelPlayer()
+    setupLevelPlayer()
 end

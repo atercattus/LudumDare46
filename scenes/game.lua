@@ -5,9 +5,11 @@ local composer = require("composer")
 --local utils = require("libs.utils")
 local pool = require('libs.pool')
 
-local gameSetupUI = require('scenes.game_ui')
+local gameSetupUI = require('scenes.game_setup_ui')
 local gameSetupLevel = require('scenes.game_setup_level')
 local sceneInternals = require('scenes.scene_internals')
+
+local const = require('scenes.game_constants')
 
 local display = display
 local scene = composer.newScene()
@@ -22,34 +24,29 @@ local ReqWidth = 32
 local ReqHeight = 32
 local ReqRenderScale = 0.5
 
---- Requests ---
-local ReqTypeFlood = 1
-local ReqTypeLegal = 2
-local ReqTypeUnknown = 3
-local ReqColors = {
-    [ReqTypeFlood] = { 0.7, 0.0, 0.0 },
-    [ReqTypeLegal] = { 0, 0.7, 0 },
-    [ReqTypeUnknown] = { 0.7, 0.7, 0.7 },
-}
-
 function scene:create(event)
     W, H = display.contentWidth, display.contentHeight
 
-    scene.reqInFlight = {}
+    self.reqInFlight = {}
 
-    gameSetupUI(scene)
-    gameSetupLevel(scene)
+    gameSetupUI(self.view)
+
+    self.levelGroup = display.newGroup()
+    self.levelGroup.x = 0
+    self.levelGroup.y = 0
+    self.view:insert(self.levelGroup)
+    gameSetupLevel(self.levelGroup)
 
     -- fake test requests
     for i = 1, 1000 do
-        local reqType = ReqTypeLegal
+        local reqType = const.ReqTypeLegal
         local rnd = mathRandom()
         if rnd < 0.05 then
-            reqType = ReqTypeUnknown
+            reqType = const.ReqTypeUnknown
         elseif rnd > 0.3 then
-            reqType = ReqTypeFlood
+            reqType = const.ReqTypeFlood
         end
-        scene:newReq(reqType)
+        self:newReq(reqType)
     end
 end
 
@@ -76,7 +73,7 @@ function scene:newReq(reqType)
     req.xScale = ReqRenderScale
     req.yScale = ReqRenderScale
 
-    local color = ReqColors[reqType]
+    local color = const.ReqColors[reqType]
     req:setFillColor(color[1], color[2], color[3])
 
     self.reqInFlight[#self.reqInFlight + 1] = req
