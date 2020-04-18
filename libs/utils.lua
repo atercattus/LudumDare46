@@ -149,4 +149,12 @@ function M.getDeltaTime(now)
     return deltaTime
 end
 
+function M.setNextFrame(obj, totalFrames)
+    local frame = obj.fill.frame + 1
+    if frame > totalFrames then
+        frame = 1
+    end
+    obj.fill.frame = frame
+end
+
 return M

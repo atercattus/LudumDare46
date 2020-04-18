@@ -36,7 +36,6 @@ return function(parent, scene)
         end
     end
 
-
     function scene:updateLA()
         local la = scene.state.la
         scene.objs.txtLAValue.text = math.floor(la) .. '%'
@@ -51,7 +50,7 @@ return function(parent, scene)
     end
 
     function scene:updateServersCount()
-        scene.objs.txtSrvCnt.text = 'x' .. scene.state.serversCnt
+        scene.objs.txtSrvCnt.text = 'X' .. scene.state.serversCnt
     end
 
     local function setupUITopPanel()
@@ -108,8 +107,6 @@ return function(parent, scene)
         params.align = 'center'
         params.fontSize = 50
         local txtLAValue = display.newText(params)
-        --txtLAValue:setFillColor(0.89, 0.2, 0.2)
-        --txtLAValue:setFillColor(0.2, 0.9, 0.2)
         txtLAValue.anchorX = 0
         txtLAValue.anchorY = 0.5
         txtLAValue.x = 150
@@ -121,16 +118,27 @@ return function(parent, scene)
 
     local function setupUIBottomPanelServersCnt()
         local w = 100
-        local x = 350
+        local frameCnt = 4
+
+        local options = {
+            width = 64,
+            height = 64,
+            numFrames = frameCnt,
+        }
+        local serverImageSheet = graphics.newImageSheet("data/server.png", options)
+
         local srvImg = display.newRect(parent, 0, 0, w, w)
+        srvImg.fill = { type = "image", sheet = serverImageSheet, frame = 1 }
+        srvImg.fillFrameCnt = frameCnt
+
+        local x = 350
         srvImg.x = x
         srvImg.y = H - const.BottomPanelHeight / 2
         srvImg.anchorX = 0.5
         srvImg.anchorY = 0.5
-        srvImg:setFillColor(0.5, 0.5, 0.5)
-        parent:insert(srvImg)
+        scene.objs.srvImg = srvImg
 
-        local txtSrvCnt = display.newText({ text = 'x1', width = 300, font = fontName, fontSize = 50, align = 'left' })
+        local txtSrvCnt = display.newText({ text = '', width = 300, font = fontName, fontSize = 50, align = 'left' })
         txtSrvCnt.anchorX = 0
         txtSrvCnt.anchorY = 1
         txtSrvCnt.x = x + w / 2

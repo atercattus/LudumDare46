@@ -67,6 +67,19 @@ function scene:create(event)
     self:addUpdate(self.flowFlood.update)
     self:addUpdate(self.flowUnknown.update)
     self:addUpdate(self.updatePlayer)
+
+    self:addUpdate(function(_, deltaTime)
+        if self.objs.srvImgPrevTs == nil then
+            self.objs.srvImgPrevTs = deltaTime
+            return
+        end
+        local ts = self.objs.srvImgPrevTs + deltaTime
+        self.objs.srvImgPrevTs = ts
+        if ts > 0.1 then
+            self.objs.srvImgPrevTs = 0
+            utils.setNextFrame(self.objs.srvImg, self.objs.srvImg.fillFrameCnt)
+        end
+    end)
 end
 
 function scene.flowNew()
@@ -155,6 +168,7 @@ function scene:createFlowFlood()
         end,
 
         update = function(deltaTime)
+            self.flowFlood.emitQps = self.flowFlood.emitQps + self.state.legalQpsSpeedup * deltaTime
         end,
     })
 end
@@ -173,6 +187,7 @@ function scene:createFlowUnknown()
         end,
 
         update = function(deltaTime)
+            self.flowUnknown.emitQps = self.flowUnknown.emitQps + self.state.legalQpsSpeedup * deltaTime
         end,
     })
 end
