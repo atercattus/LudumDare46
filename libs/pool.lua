@@ -2,10 +2,8 @@ local M = {}
 
 local tableRemove = table.remove
 
-function M:new(constructor, options)
-    local pool = {
-        --callback = constructor,
-    }
+function M.new(constructor)
+    local pool = {}
 
     function pool:get()
         if pool._cache == nil then

@@ -1,9 +1,6 @@
---local gameName = gameName
---local fontName = fontName
-
 local composer = require("composer")
 local utils = require("libs.utils")
-local pool = require('libs.pool')
+local flowNew = require('libs.flow').new
 
 local gameSetupUI = require('scenes.game_setup_ui')
 local gameSetupLevel = require('scenes.game_setup_level')
@@ -15,7 +12,6 @@ local const = require('scenes.game_constants')
 local display = display
 local scene = composer.newScene()
 local mathRandom = math.random
-local tableRemove = utils.tableRemove
 local W, H = display.contentWidth, display.contentHeight
 
 --- UI ---
@@ -25,7 +21,6 @@ local ReqHeight = 64
 local ReqSteps = 12
 
 local UIReqMaxSprites = 700 -- Можно сделать настройкой "качество графики" XD
-local UIReqMaxNewPerCall = 200
 local UIReqMaxSpeed = 600
 local UIReqSpeedupPerSecond = 1.1
 
@@ -49,6 +44,15 @@ function scene:create(event)
         baseReqSpeed = 300, -- Базовая скорость нового запроса
     }
 
+    local options = {
+        width = ReqWidth,
+        height = ReqHeight,
+        numFrames = ReqSteps,
+    }
+    local circleImageSheet = graphics.newImageSheet("data/circle.png", options)
+
+    self:createFlowLegal(circleImageSheet)
+
     self.levelGroup = display.newGroup()
     self.levelGroup.x = 0
     self.levelGroup.y = 0
@@ -58,92 +62,74 @@ function scene:create(event)
 
     gameSetupLevel(self.view, self)
 
-    self:addUpdate(self.updateRequests)
+    self:addUpdate(self.flowLegal.update)
     self:addUpdate(self.updatePlayer)
 end
 
-function scene:updateRequests(deltaTime)
-    local self = scene
+function scene:createFlowLegal(circleImageSheet)
+    self.flowLegal = flowNew({
+        emitQps = 1,
+        maxInFly = UIReqMaxSprites,
+        reqSteps = ReqSteps,
 
-    local toDelete = {}
-    local toDeleteReqCnt = 0
-    for i, req in next, self.reqInFlight do
-        self:checkPanelsForReq(req)
+        new = function()
+            local req = display.newRect(0, 0, ReqWidth, ReqHeight)
+            req.fill = { type = "image", sheet = circleImageSheet, frame = 1 }
+            scene.levelGroup:insert(req)
+            req.anchorX = 0.5
+            req.anchorY = 0.5
 
-        req.y = req.y + req.speed * deltaTime
-        if req.y > H - const.BottomPanelHeight then
-            toDelete[#toDelete + 1] = i
-            toDeleteReqCnt = toDeleteReqCnt + req.reqCnt -- Подсчет реального количества запросов, а не числа спрайтов
-        end
-    end
+            return req
+        end,
 
-    local state = scene.state
-
-    if #toDelete > 0 then
-        state.money = state.money + state.CPC * (toDeleteReqCnt / 1000.0) -- CPC читаю за тысячу
-        scene:updateMoney()
-
-        scene.state.la = math.min(146, 100 * state.legalQps / (state.serverMaxQps * state.serversCnt))
-        scene:updateLA()
-
-        if scene.state.la >= 100 then
-            state.serversCnt = state.serversCnt + 1 -- тестирую :)
-            scene:updateServersCount()
-        end
-
-        scene:deleteReqsByIds(toDelete)
-    end
-
-    scene:updateRequestsGenNews(deltaTime)
-
-    state.legalQps = state.legalQps + state.legalQpsSpeedup * deltaTime
-    state.legalQpsSpeedup = state.legalQpsSpeedup + deltaTime * LegalQpsSpeedupPerSecond
-
-    state.baseReqSpeed = math.min(UIReqMaxSpeed, state.baseReqSpeed + UIReqSpeedupPerSecond * deltaTime)
-end
-
-function scene:deleteReqsByIds(ids)
-    for i = #ids, 1, -1 do
-        local req = self.reqInFlight[ids[i]]
-        tableRemove(self.reqInFlight, ids[i])
-        self.poolRequests:put(req)
-        req.isVisible = false
-    end
-end
-
-function scene:updateRequestsGenNews(deltaTime)
-    if scene.newReqsAccum == nil then
-        scene.newReqsAccum = 0
-    end
-
-    if #self.reqInFlight > UIReqMaxSprites then
-        -- Ограничение на число отрисовываемых спрайтов
-        return
-    end
-
-    local cntFloat = scene.newReqsAccum + (scene.state.legalQps * deltaTime)
-    local cnt = math.floor(cntFloat)
-    scene.newReqsAccum = cntFloat - cnt
-    if cnt > 0 then
-        local cntCoeff = 1
-        if cnt > UIReqMaxNewPerCall then
-            cntCoeff = cnt / UIReqMaxNewPerCall
-            cnt = UIReqMaxNewPerCall
-        end
-        local maxStep = math.min(ReqSteps, math.max(1, cnt / 10))
-        for step = maxStep, 1, -1 do
-            while (cnt >= step) and (#self.reqInFlight < UIReqMaxSprites) do
-                if cnt > 1 then
-                    -- Даже при большом потоке даю шанс выпасть мелкой картинке, чтобы в целом поток выглядил равномернее
-                    local rnd = mathRandom(step) / step
-                    cntCoeff = cntCoeff / rnd
-                    step = math.max(1, step * rnd)
-                end
-                scene:newReq(const.ReqTypeLegal, step, cntCoeff)
-                cnt = cnt - step
+        reset = function(req, cnt, cntCoeff)
+            req.reqCnt = math.round(cnt * cntCoeff) -- Сохраняю реальное количество запросов, которое обозначает этот спрайт
+            if cnt > ReqSteps then
+                cnt = ReqSteps
             end
-        end
-    end
+            req.fill.frame = cnt
+            req.rotation = mathRandom(360)
+
+            req.reqType = const.ReqTypeLegal
+            req.x = mathRandom(W - ReqWidth) + ReqWidth / 2
+            req.y = const.TopPanelHeight + -mathRandom(ReqWidth * 10) / 10.0
+            req.speed = self.state.baseReqSpeed + mathRandom(100)
+
+            local color = const.ReqColors[const.ReqTypeLegal]
+            req:setFillColor(color[1], color[2], color[3])
+        end,
+
+        deleteFinished = function(reqs)
+            local toDeleteReqCnt = 0
+            for _, req in next, reqs do
+                toDeleteReqCnt = toDeleteReqCnt + req.reqCnt -- Подсчет реального количества запросов, а не числа спрайтов
+            end
+            local state = scene.state
+
+            state.money = state.money + state.CPC * (toDeleteReqCnt / 1000.0) -- CPC читаю за тысячу
+            scene:updateMoney()
+
+            scene.state.la = math.min(146, 100 * state.legalQps / (state.serverMaxQps * state.serversCnt))
+            scene:updateLA()
+
+            if scene.state.la >= 100 then
+                state.serversCnt = state.serversCnt + 1 -- тестирую :)
+                scene:updateServersCount()
+            end
+        end,
+
+        update = function(deltaTime)
+            -- ToDo: self:checkPanelsForReq(req)
+            local state = scene.state
+
+            state.legalQps = state.legalQps + state.legalQpsSpeedup * deltaTime
+            state.legalQpsSpeedup = state.legalQpsSpeedup + deltaTime * LegalQpsSpeedupPerSecond
+
+            state.baseReqSpeed = math.min(UIReqMaxSpeed, state.baseReqSpeed + UIReqSpeedupPerSecond * deltaTime)
+
+            self.flowLegal.emitQps = state.legalQps
+        end,
+    })
 end
 
 function scene:updatePlayer(deltaTime)
@@ -165,51 +151,6 @@ function scene:checkPanelsForReq(req)
             panelsLogic.collideReqWithPanel(req, panel)
         end
     end
-end
-
-function scene:newReq(reqType, cnt, cntCoeff)
-    if self.poolRequests == nil then
-        local sceneSelf = self
-
-        local options = {
-            width = ReqWidth,
-            height = ReqHeight,
-            numFrames = ReqSteps,
-        }
-        local circleImageSheet = graphics.newImageSheet("data/circle.png", options)
-
-        self.poolRequests = pool:new(function()
-            local req = display.newRect(0, 0, ReqWidth, ReqHeight)
-            req.fill = { type = "image", sheet = circleImageSheet, frame = 1 }
-            sceneSelf.levelGroup:insert(req)
-            req.anchorX = 0.5
-            req.anchorY = 0.5
-
-            return req
-        end)
-    end
-
-    local req = self.poolRequests:get()
-    req.reqCnt = math.round(cnt * cntCoeff) -- Сохраняю реальное количество запросов, которое обозначает этот спрайт
-    if cnt > ReqSteps then
-        cnt = ReqSteps
-    end
-    req.fill.frame = cnt
-    req.rotation = mathRandom(360)
-
-    req.isVisible = true
-
-    req.reqType = reqType
-    req.x = mathRandom(W - ReqWidth) + ReqWidth / 2
-    req.y = const.TopPanelHeight + -mathRandom(ReqWidth * 10) / 10.0
-    req.speed = self.state.baseReqSpeed + mathRandom(100)
-
-    local color = const.ReqColors[reqType]
-    req:setFillColor(color[1], color[2], color[3])
-
-    self.reqInFlight[#self.reqInFlight + 1] = req
-
-    return req
 end
 
 sceneInternals(scene)
