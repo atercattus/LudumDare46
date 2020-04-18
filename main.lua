@@ -11,3 +11,4 @@ end
 Runtime:addEventListener("unhandledError", myUnhandledErrorListener)
 
 composer.gotoScene("scenes.menu")
+--composer.gotoScene("scenes.game")

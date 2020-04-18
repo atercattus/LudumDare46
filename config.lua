@@ -11,6 +11,6 @@ application = {
         width = 900,
         height = 1600,
         scale = 'letterbox',
-        fps = 30,
+        fps = 60,
     }
 }
