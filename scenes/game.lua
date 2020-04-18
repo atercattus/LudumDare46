@@ -2,7 +2,7 @@
 --local fontName = fontName
 
 local composer = require("composer")
---local utils = require("libs.utils")
+local utils = require("libs.utils")
 local pool = require('libs.pool')
 
 local gameSetupUI = require('scenes.game_setup_ui')
@@ -17,25 +17,23 @@ local mathRandom = math.random
 local W, H = display.contentWidth, display.contentHeight
 
 --- UI ---
-local TopPanelHeight = 100
-local BottomPanelHeight = 150
 
-local ReqWidth = 32
-local ReqHeight = 32
-local ReqRenderScale = 0.5
+local ReqWidth = 16
+local ReqHeight = 16
 
 function scene:create(event)
     W, H = display.contentWidth, display.contentHeight
 
     self.reqInFlight = {}
-
-    gameSetupUI(self.view)
+    self.objs = {}
 
     self.levelGroup = display.newGroup()
     self.levelGroup.x = 0
     self.levelGroup.y = 0
     self.view:insert(self.levelGroup)
-    gameSetupLevel(self.levelGroup)
+    gameSetupLevel(self.levelGroup, self)
+
+    gameSetupUI(self.view, self)
 
     -- fake test requests
     for i = 1, 1000 do
@@ -48,6 +46,39 @@ function scene:create(event)
         end
         self:newReq(reqType)
     end
+
+    self:addUpdate(self.updateRequests)
+    self:addUpdate(self.updatePlayer)
+end
+
+function scene:updateRequests(deltaTime)
+    local self = scene
+    for i = 1, #self.reqInFlight do
+        local req = self.reqInFlight[i]
+
+        if req.isVisible and req.reqType ~= const.ReqTypeLegal then
+            if utils.hasCollidedSquareAndRect(req, self.objs.player) then
+                req.isVisible = false
+            elseif utils.hasCollidedSquareAndRect(req, self.objs.panelThrottling) then
+                req.isVisible = false
+            end
+        end
+
+        req.y = req.y + req.speed * deltaTime
+        if req.y > H - const.BottomPanelHeight then
+            req.y = const.TopPanelHeight - ReqHeight
+            req.isVisible = true
+        end
+    end
+end
+
+function scene:updatePlayer(deltaTime)
+    local x = scene.mousePos.x
+    if x < 0 then
+        x = W / 2
+    end
+    scene.objs.player.x = x
+    scene.objs.panelBuild.x = x
 end
 
 function scene:newReq(reqType)
@@ -70,8 +101,6 @@ function scene:newReq(reqType)
     req.x = mathRandom(W)
     req.y = mathRandom(-20, 20)
     req.speed = mathRandom(200, 500)
-    req.xScale = ReqRenderScale
-    req.yScale = ReqRenderScale
 
     local color = const.ReqColors[reqType]
     req:setFillColor(color[1], color[2], color[3])
@@ -79,17 +108,6 @@ function scene:newReq(reqType)
     self.reqInFlight[#self.reqInFlight + 1] = req
 
     return req
-end
-
-function scene:update(deltaTime)
-    for i = 1, #self.reqInFlight do
-        local req = self.reqInFlight[i]
-
-        req.y = req.y + req.speed * deltaTime
-        if req.y > H - BottomPanelHeight then
-            req.y = TopPanelHeight - ReqHeight * ReqRenderScale / 2
-        end
-    end
 end
 
 sceneInternals(scene)

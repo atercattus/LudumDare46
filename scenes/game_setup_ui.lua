@@ -1,4 +1,4 @@
-return function(parent)
+return function(parent, scene)
     local display = display
     local fontName = fontName
     local W, H = display.contentWidth, display.contentHeight
@@ -13,53 +13,106 @@ return function(parent)
     end
 
     local function setupUITopPanel()
-        local params = { width = 220, font = fontName, fontSize = fontSize, align = 'center' }
+        local bg = display.newRect(parent, 0, 0, W, const.TopPanelHeight)
+        bg.anchorX = 0
+        bg.anchorY = 0
+        bg:setFillColor(0, 0, 0)
 
-        params.text = '1.Throttling\n$' .. const.TechCosts[const.TechThrottling]
-        local txtThrottling = display.newText(params)
-        setColor(txtThrottling, colorAvail)
-        txtThrottling.anchorX = 0
-        txtThrottling.anchorY = 0
-        txtThrottling.x = 20
-        txtThrottling.y = 0
-        parent:insert(txtThrottling)
+        local textParams = { width = 220, font = fontName, fontSize = fontSize, align = 'center' }
 
-        params.text = '2.Filter\n$' .. const.TechCosts[const.TechFilter]
-        local txtFloodFilter = display.newText(params)
-        setColor(txtFloodFilter, colorAvail)
-        txtFloodFilter.anchorX = 0
-        txtFloodFilter.anchorY = 0
-        txtFloodFilter.x = 280
-        txtFloodFilter.y = 0
-        parent:insert(txtFloodFilter)
+        local techXs = { 20, 240, 460, 680, W }
 
-        params.text = '3.Firewall\n$' .. const.TechCosts[const.TechFirewall]
-        local txtFirewall = display.newText(params)
-        setColor(txtFirewall, colorUnavail)
-        txtFirewall.anchorX = 0
-        txtFirewall.anchorY = 0
-        txtFirewall.x = 500
-        txtFirewall.y = 0
-        parent:insert(txtFirewall)
+        for i = 1, #const.TechNames do
+            local params = textParams
+            params.text = i .. '.' .. const.TechNames[i] .. '\n$' .. const.TechCosts[i]
+            local txt = display.newText(params)
+            setColor(txt, colorAvail)
+            txt.anchorX = 0
+            txt.anchorY = 0
+            txt.x = techXs[i]
+            txt.y = 0
+            parent:insert(txt)
 
-        params.text = '4.ML DPI\n$' .. const.TechCosts[const.TechMLDPI]
-        local txtMLDPI = display.newText(params)
-        setColor(txtMLDPI, colorUnavail)
-        txtMLDPI.anchorX = 0
-        txtMLDPI.anchorY = 0
-        txtMLDPI.x = 700
-        txtMLDPI.y = 0
-        parent:insert(txtMLDPI)
+            local panel = display.newRect(0, 0, 256, 32)
+            panel.fill = { type = "image", sheet = scene.objs.panelsImageSheet, frame = i }
+            panel.x = techXs[i] + (techXs[i + 1] - techXs[i]) / 2
+            panel.y = const.TopPanelHeight - 5
+            panel.anchorX = 0.5
+            panel.anchorY = 1
+            panel.xScale = 0.8
+            panel.yScale = 0.8
+            parent:insert(panel)
+        end
+    end
+
+    local function setupUIBottomPanelLoadAverage()
+        local bg = display.newRect(parent, 0, 0, W, const.BottomPanelHeight)
+        bg.y = H - bg.height
+        bg.anchorX = 0
+        bg.anchorY = 0
+        bg:setFillColor(0, 0, 0)
+
+        local params = { font = fontName, fontSize = 30, align = 'center' }
+
+        params.text = 'Load\nAverage'
+        params.width = 150
+        params.align = 'right'
+        local txtLA = display.newText(params)
+        txtLA.anchorX = 0
+        txtLA.anchorY = 0.5
+        txtLA.x = 0
+        txtLA.y = H - const.BottomPanelHeight / 2
+        parent:insert(txtLA)
+
+        params.text = '1%'
+        params.width = 150
+        params.align = 'center'
+        params.fontSize = 50
+        local txtLAValue = display.newText(params)
+        --txtLAValue:setFillColor(0.89, 0.2, 0.2)
+        txtLAValue:setFillColor(0.2, 0.9, 0.2)
+        txtLAValue.anchorX = 0
+        txtLAValue.anchorY = 0.5
+        txtLAValue.x = 150
+        txtLAValue.y = H - const.BottomPanelHeight / 2
+        parent:insert(txtLAValue)
+    end
+
+    local function setupUIBottomPanelServersCnt()
+        local w = 100
+        local x = 350
+        local srvImg = display.newRect(parent, 0, 0, w, w)
+        srvImg.x = x
+        srvImg.y = H - const.BottomPanelHeight / 2
+        srvImg.anchorX = 0.5
+        srvImg.anchorY = 0.5
+        srvImg:setFillColor(0.5, 0.5, 0.5)
+        parent:insert(srvImg)
+
+        local txtSrvCnt = display.newText({ text = 'x1', width = 300, font = fontName, fontSize = 50, align = 'left' })
+        txtSrvCnt.anchorX = 0
+        txtSrvCnt.anchorY = 1
+        txtSrvCnt.x = x + w / 2
+        txtSrvCnt.y = srvImg.y
+        txtSrvCnt:setFillColor(0.4, 0.4, 1.0)
+        parent:insert(txtSrvCnt)
+    end
+
+    local function setupUIBottomPanelMoney()
+        local txtMoney = display.newText({ text = '$467', width = W, font = fontName, fontSize = 50, align = 'right' })
+        txtMoney.anchorX = 1
+        txtMoney.anchorY = 1
+        txtMoney.x = W - 10
+        txtMoney.y = H - 10
+        txtMoney:setFillColor(0.3, 1.0, 0.3)
+        parent:insert(txtMoney)
     end
 
     local function setupUIBottomPanel()
-
+        setupUIBottomPanelLoadAverage()
+        setupUIBottomPanelServersCnt()
+        setupUIBottomPanelMoney()
     end
-
-    local bg = display.newRect(parent, 0, 0, W, H)
-    bg.anchorX = 0
-    bg.anchorY = 0
-    bg:setFillColor(0, 0, 0)
 
     setupUITopPanel()
     setupUIBottomPanel()

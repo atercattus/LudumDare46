@@ -1,4 +1,8 @@
 local M = {
+        -- UI
+    TopPanelHeight = 100,
+    BottomPanelHeight = 150,
+
     -- Типы запросов и их параметры
     ReqTypeFlood = 1, -- Флуд запросы
     ReqTypeLegal = 2, -- Легитимные запросы
@@ -25,6 +29,13 @@ M.TechCosts = {
     [M.TechFilter] = 100,
     [M.TechFirewall] = 500,
     [M.TechMLDPI] = 200,
+}
+
+M.TechNames = {
+    [M.TechThrottling] = 'Throttling',
+    [M.TechFilter] = 'Filter',
+    [M.TechFirewall] = 'Firewall',
+    [M.TechMLDPI] = 'ML DPI',
 }
 
 return M

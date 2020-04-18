@@ -55,6 +55,31 @@ function M.hasCollidedCircle(obj1, obj2)
     return M.distanceBetween(obj1, obj2) < minimalDistance
 end
 
+function M.hasCollidedSquareAndRect(squareObj, rectObj)
+    -- Не учитывает scale объектов
+
+    local cS = squareObj.width
+    local cX = squareObj.x - cS * squareObj.anchorX
+    local cY = squareObj.y - cS * squareObj.anchorY
+
+    local x, y, w, h = rectObj.x, rectObj.y, rectObj.width, rectObj.height
+    local dx, dy = rectObj.width * rectObj.anchorX, rectObj.height * rectObj.anchorY
+
+    local rX1, rY1, rX2, rY2 = x - dx, y - dy, x + w - dx, y + h - dy
+
+    -- Выше или ниже
+    if (cY + cS < rY1) or (cY > rY2) then
+        return false
+    end
+
+    -- Левее или правее
+    if (cX + cS < rX1) or (cX > rX2) then
+        return false
+    end
+
+    return true
+end
+
 function M.sinCos(angleDeg)
     if M.sinCosDegTable == nil then
         M.sinCosDegTable = {}
