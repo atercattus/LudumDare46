@@ -2,11 +2,12 @@
 --local fontName = fontName
 
 local composer = require("composer")
-local utils = require("libs.utils")
+--local utils = require("libs.utils")
 local pool = require('libs.pool')
 
-local gameUI = require('scenes.game_ui')
-local gameInternals = require('scenes.game_internals')
+local gameSetupUI = require('scenes.game_ui')
+local gameSetupLevel = require('scenes.game_setup_level')
+local sceneInternals = require('scenes.scene_internals')
 
 local display = display
 local scene = composer.newScene()
@@ -36,8 +37,8 @@ function scene:create(event)
 
     scene.reqInFlight = {}
 
-    gameUI(scene)
-    scene:setupLevel()
+    gameSetupUI(scene)
+    gameSetupLevel(scene)
 
     -- fake test requests
     for i = 1, 1000 do
@@ -50,19 +51,6 @@ function scene:create(event)
         end
         scene:newReq(reqType)
     end
-end
-
-function scene:setupLevel()
-    self.levelGroup = display.newGroup()
-    self.levelGroup.x = 0
-    self.levelGroup.y = 0
-    self.view:insert(self.levelGroup)
-
-    self:setupLevelPlayer()
-end
-
-function scene:setupLevelPlayer()
-
 end
 
 function scene:newReq(reqType)
@@ -107,6 +95,6 @@ function scene:update(deltaTime)
     end
 end
 
-gameInternals(scene)
+sceneInternals(scene)
 
 return scene

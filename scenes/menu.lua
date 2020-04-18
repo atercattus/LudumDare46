@@ -2,7 +2,7 @@ local gameName = gameName
 local fontName = fontName
 
 local composer = require("composer")
-local gameInternals = require('scenes.game_internals')
+local sceneInternals = require('scenes.scene_internals')
 
 local display = display
 local scene = composer.newScene()
@@ -37,6 +37,6 @@ function scene:update(deltaTime)
     -- ...
 end
 
-gameInternals(scene)
+sceneInternals(scene)
 
 return scene
