@@ -7,6 +7,8 @@ local mathCos = math.cos
 local mathRound = math.round
 local tonumber = tonumber
 local stringFormat = string.format
+local pairs = pairs
+local systemGetTimer = system.getTimer
 
 local M = {}
 
@@ -86,6 +88,19 @@ end
 
 function M.round(num, numDecimalPlaces)
     return tonumber(stringFormat("%." .. (numDecimalPlaces or 0) .. "f", num))
+end
+
+function M.getDeltaTime(now)
+    if (not M._lastEnterFrameTime) or (M._lastEnterFrameTime == 0) then
+        M._lastEnterFrameTime = systemGetTimer()
+        return 0
+    end
+    local deltaTime = (now - M._lastEnterFrameTime) / 1000
+    M._lastEnterFrameTime = now
+    if deltaTime <= 0 then
+        return 0
+    end
+    return deltaTime
 end
 
 return M

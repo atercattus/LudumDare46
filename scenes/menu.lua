@@ -1,11 +1,15 @@
 local gameName = gameName
 local fontName = fontName
-local display = display
+
 local composer = require("composer")
+local utils = require("libs.utils")
+
+local display = display
 local scene = composer.newScene()
+local W, H = display.contentWidth, display.contentHeight
 
 function scene:create(event)
-    local W, H = display.contentWidth, display.contentHeight
+    W, H = display.contentWidth, display.contentHeight
     local sceneGroup = self.view
 
     local bg = display.newRect(sceneGroup, 0, 0, W, H)
@@ -17,43 +21,46 @@ function scene:create(event)
     sceneGroup:insert(titleText)
     titleText:setFillColor(1, 1, 0.4)
     titleText.anchorX = 0.5
-    titleText.anchorY = 0
+    titleText.anchorY = 0.5
     titleText.x = W / 2
-    titleText.y = 10
+    titleText.y = H / 2
 
-    --local controls = display.newImageRect("data/controls.png", 512, 512)
-    --sceneGroup:insert(controls)
-    --controls.x = W / 2
-    --controls.y = H
-    --controls.anchorX = 0.5
-    --controls.anchorY = 1
-    --controls.xScale = 1
-    --controls.yScale = 1
-    --
-    --local startGameScaleFunc
-    --startGameScaleFunc = function()
-    --    transition.scaleTo(controls, {
-    --        time = 2500,
-    --        xScale = 1.07,
-    --        yScale = 1.07,
-    --        onComplete = function()
-    --            transition.scaleTo(controls, { time = 2500, xScale = 1, yScale = 1, onComplete = startGameScaleFunc })
-    --        end
-    --    })
-    --end
-    --startGameScaleFunc()
+    bg:addEventListener("touch", function(ev)
+        if ev.phase == 'began' then
+            composer.gotoScene('scenes.game')
+        end
+        return true
+    end)
+end
 
-    --bg:addEventListener("touch", function(event)
-    --    if event.phase == 'began' then
-    --        composer.gotoScene('scenes.game')
-    --    end
-    --    return true
-    --end)
+function scene:update(deltaTime)
+    -- ...
+end
+
+local function onEnterFrame(event)
+    scene:onEnterFrame(event)
 end
 
 scene:addEventListener("create", scene)
-scene:addEventListener("show", function()
+scene:addEventListener("show", function(event)
     composer.removeHidden() -- Выгружаю остальные сцены
+
+    if (event.phase == "will") then
+        Runtime:addEventListener("enterFrame", onEnterFrame)
+    end
 end)
+
+scene:addEventListener("hide", function(event)
+    --if (event.phase == "did") then
+        Runtime:removeEventListener("enterFrame", onEnterFrame)
+    --end
+end)
+
+function scene:onEnterFrame(event)
+    local deltaTime = utils.getDeltaTime(event.time)
+    if deltaTime > 0 then
+        self:update(deltaTime)
+    end
+end
 
 return scene
