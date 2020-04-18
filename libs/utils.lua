@@ -43,6 +43,17 @@ function M.vectorLen(vec)
     return mathSqrt(vec.x * vec.x + vec.y * vec.y)
 end
 
+function M.tableRemove(t, idx)
+    if idx < #t then
+        t[idx] = t[#t]
+        t[#t] = nil
+    else
+        t[idx] = nil
+    end
+
+    return t
+end
+
 function M.distanceBetween(obj1, obj2)
     local dX = obj1.x - obj2.x
     local dY = obj1.y - obj2.y
