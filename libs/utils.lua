@@ -115,6 +115,16 @@ function M.round(num, numDecimalPlaces)
     return tonumber(stringFormat("%." .. (numDecimalPlaces or 0) .. "f", num))
 end
 
+function M.roundStr(num, numDecimalPlaces)
+    local integerPart = math.floor(num)
+    if numDecimalPlaces == 0 then
+        return tostring(integerPart)
+    end
+
+    local floatPart = string.sub(stringFormat("%." .. (numDecimalPlaces or 0) .. "f", num - integerPart), 3)
+    return integerPart .. '.' .. floatPart
+end
+
 function M.getDeltaTime(now)
     if (not M._lastEnterFrameTime) or (M._lastEnterFrameTime == 0) then
         M._lastEnterFrameTime = systemGetTimer()

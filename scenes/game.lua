@@ -15,6 +15,7 @@ local const = require('scenes.game_constants')
 local display = display
 local scene = composer.newScene()
 local mathRandom = math.random
+local tableRemove = table.remove
 local W, H = display.contentWidth, display.contentHeight
 
 --- UI ---
@@ -26,27 +27,27 @@ function scene:create(event)
     W, H = display.contentWidth, display.contentHeight
 
     self.reqInFlight = {}
+    self.panels = {}
     self.objs = {}
+    self.state = {
+        startedAt = system.getTimer() / 1000, -- Время начала (сек)
+        money = 0, -- Денег на счету (нужны для покупки серверов и средств защиты от DDoS)
+        CPC = 2, -- Стоимость каждой 1000 легальных запросов, долетевших до сервера
+        la = 0, -- Суммарная нагрузка на все сервера (зависит от суммарного qps, долетающего до серверов)
+        serversCnt = 1, -- Общее количество работающих серверов (влияет на LA)
+        serverMaxQps = 5000, -- Максимальный QPS, который может обработать один сервер
+        legalQps = 1, -- QPS пользовательских запросов (влияет на money)
+        legalQpsSpeedup = 1, -- Прирост legalQps в секунду
+    }
 
     self.levelGroup = display.newGroup()
     self.levelGroup.x = 0
     self.levelGroup.y = 0
     self.view:insert(self.levelGroup)
-    gameSetupLevel(self.levelGroup, self)
 
     gameSetupUI(self.view, self)
 
-    -- fake test requests
-    for i = 1, 1000 do
-        local reqType = const.ReqTypeLegal
-        local rnd = mathRandom()
-        if rnd < 0.05 then
-            reqType = const.ReqTypeUnknown
-        elseif rnd > 0.3 then
-            reqType = const.ReqTypeFlood
-        end
-        self:newReq(reqType)
-    end
+    gameSetupLevel(self.view, self)
 
     self:addUpdate(self.updateRequests)
     self:addUpdate(self.updatePlayer)
@@ -54,32 +55,94 @@ end
 
 function scene:updateRequests(deltaTime)
     local self = scene
+
+    local toDelete = {}
     for i = 1, #self.reqInFlight do
         local req = self.reqInFlight[i]
 
-        if req.isVisible then
-            if utils.hasCollidedSquareAndRect(req, self.objs.player) then
-                panelsLogic.collideReqWithPanel(req, self.objs.player)
-            elseif utils.hasCollidedSquareAndRect(req, self.objs.panelThrottling) then
-                panelsLogic.collideReqWithPanel(req, self.objs.panelThrottling)
-            end
-        end
+        self:checkPanelsForReq(req)
 
         req.y = req.y + req.speed * deltaTime
         if req.y > H - const.BottomPanelHeight then
-            req.y = const.TopPanelHeight - ReqHeight
-            req.isVisible = true
+            toDelete[#toDelete + 1] = i
+        end
+    end
+
+    if #toDelete > 0 then
+        local state = scene.state
+
+        state.money = state.money + state.CPC * (#toDelete / 1000.0) -- CPC читаю за тысячу
+        scene:updateMoney()
+
+        scene.state.la = math.min(146, 100 * state.legalQps / (state.serverMaxQps * state.serversCnt))
+        scene:updateLA()
+
+        if scene.state.la >= 100 then
+            state.serversCnt = state.serversCnt + 1 -- тестирую :)
+            scene:updateServersCount()
+        end
+
+        scene:deleteReqsByIds(toDelete)
+    end
+
+    scene:updateRequestsGenNews(deltaTime)
+
+    scene.state.legalQps = scene.state.legalQps + scene.state.legalQpsSpeedup * deltaTime
+    scene.state.legalQpsSpeedup = scene.state.legalQpsSpeedup + deltaTime * 2
+end
+
+function scene:deleteReqsByIds(ids)
+    for i = #ids, 1, -1 do
+        local req = self.reqInFlight[ids[i]]
+        tableRemove(self.reqInFlight, ids[i])
+        self.poolRequests:put(req)
+        req.isVisible = false
+    end
+end
+
+function scene:updateRequestsGenNews(deltaTime)
+    if scene.newReqsAccum == nil then
+        scene.newReqsAccum = 0
+    end
+
+    if #self.reqInFlight > 1000 then
+        -- Тут уже нужно использовать картинки с несколькими запросами
+        return
+    end
+
+    local cntFloat = scene.newReqsAccum + (scene.state.legalQps * deltaTime)
+    local cnt = math.floor(cntFloat)
+    if cnt > 10 then
+        cnt = 10
+    end
+    scene.newReqsAccum = cntFloat - cnt
+    if cnt > 0 then
+        for i = 1, cnt do
+            scene:newReq(const.ReqTypeLegal)
         end
     end
 end
 
 function scene:updatePlayer(deltaTime)
     local x = scene.mousePos.x
-    if x < 0 then
-        x = W / 2
+    local w = scene.objs.player.width
+    if x < w / 2 then
+        x = w / 2
+    elseif x > W - w / 2 then
+        x = W - w / 2
     end
     scene.objs.player.x = x
-    scene.objs.panelBuild.x = x
+    scene.objs.playerBuild.x = x
+end
+
+function scene:checkPanelsForReq(req)
+    -- ToDo: нужно предварительно грубо отфильтовывать по Y
+    for j = 1, #self.panels do
+        local panel = self.panels[i]
+        if utils.hasCollidedSquareAndRect(req, panel) then
+            panelsLogic.collideReqWithPanel(req, panel)
+        end
+    end
 end
 
 function scene:newReq(reqType)
@@ -99,9 +162,9 @@ function scene:newReq(reqType)
     req.isVisible = true
 
     req.reqType = reqType
-    req.x = mathRandom(W)
-    req.y = mathRandom(-20, 20)
-    req.speed = mathRandom(200, 500)
+    req.x = mathRandom(W - 2 * ReqWidth) + ReqWidth
+    req.y = const.TopPanelHeight + -mathRandom(ReqWidth * 10) / 10.0
+    req.speed = 350 + mathRandom(100)
 
     local color = const.ReqColors[reqType]
     req:setFillColor(color[1], color[2], color[3])

@@ -5,12 +5,53 @@ return function(parent, scene)
 
     local const = require('scenes.game_constants')
     local panelsLogic = require('scenes.game_panels_logic')
+    local utils = require("libs.utils")
 
     local colorAvail = { 1, 1, 0.4 }
     local colorUnavail = { 0.8, 0.8, 0.8 }
 
+    local colorLAOk = { 0.2, 0.9, 0.2 }
+    local colorLAWarn = { 0.7, 0.5, 0.2 }
+    local colorLACrit = { 1.0, 0.2, 0.2 }
+
     local function setColor(obj, color)
         obj:setFillColor(color[1], color[2], color[3])
+    end
+
+    function scene:updateMoney()
+        local money = scene.state.money
+
+        local precision = 0
+        if money < 10 then
+            precision = 3
+        elseif money < 50 then
+            precision = 2
+        elseif money < 100 then
+            precision = 1
+        end
+
+        local newText = '$' .. utils.roundStr(scene.state.money, precision)
+        if newText ~= scene.objs.txtMoney.text then
+            scene.objs.txtMoney.text = newText
+        end
+    end
+
+
+    function scene:updateLA()
+        local la = scene.state.la
+        scene.objs.txtLAValue.text = math.floor(la) .. '%'
+        local color = colorLAOk
+        if la < 60 then
+        elseif la < 95 then
+            color = colorLAWarn
+        else
+            color = colorLACrit
+        end
+        setColor(scene.objs.txtLAValue, color)
+    end
+
+    function scene:updateServersCount()
+        scene.objs.txtSrvCnt.text = 'x' .. scene.state.serversCnt
     end
 
     local function setupUITopPanel()
@@ -62,18 +103,20 @@ return function(parent, scene)
         txtLA.y = H - const.BottomPanelHeight / 2
         parent:insert(txtLA)
 
-        params.text = '1%'
+        params.text = ''
         params.width = 150
         params.align = 'center'
         params.fontSize = 50
         local txtLAValue = display.newText(params)
         --txtLAValue:setFillColor(0.89, 0.2, 0.2)
-        txtLAValue:setFillColor(0.2, 0.9, 0.2)
+        --txtLAValue:setFillColor(0.2, 0.9, 0.2)
         txtLAValue.anchorX = 0
         txtLAValue.anchorY = 0.5
         txtLAValue.x = 150
         txtLAValue.y = H - const.BottomPanelHeight / 2
         parent:insert(txtLAValue)
+        scene.objs.txtLAValue = txtLAValue
+        scene:updateLA()
     end
 
     local function setupUIBottomPanelServersCnt()
@@ -94,16 +137,20 @@ return function(parent, scene)
         txtSrvCnt.y = srvImg.y
         txtSrvCnt:setFillColor(0.4, 0.4, 1.0)
         parent:insert(txtSrvCnt)
+        scene.objs.txtSrvCnt = txtSrvCnt
+        scene:updateServersCount()
     end
 
     local function setupUIBottomPanelMoney()
-        local txtMoney = display.newText({ text = '$467', width = W, font = fontName, fontSize = 50, align = 'right' })
+        local txtMoney = display.newText({ text = '$100500', width = W, font = fontName, fontSize = 50, align = 'right' })
         txtMoney.anchorX = 1
         txtMoney.anchorY = 1
         txtMoney.x = W - 10
         txtMoney.y = H - 10
         txtMoney:setFillColor(0.3, 1.0, 0.3)
         parent:insert(txtMoney)
+        scene.objs.txtMoney = txtMoney
+        scene:updateMoney()
     end
 
     local function setupUIBottomPanel()
