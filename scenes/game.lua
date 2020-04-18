@@ -9,7 +9,6 @@ local panelsLogic = require('scenes.game_panels_logic')
 
 local const = require('scenes.game_constants')
 
-local display = display
 local scene = composer.newScene()
 local mathRandom = math.random
 local W, H = display.contentWidth, display.contentHeight
@@ -24,7 +23,7 @@ local UIReqMaxSprites = 700 -- Можно сделать настройкой "�
 local UIReqMaxSpeed = 600
 local UIReqSpeedupPerSecond = 1.1
 
-local LegalQpsSpeedupPerSecond = 2
+local LegalQpsSpeedupPerSecond = 1.2
 
 function scene:create(event)
     W, H = display.contentWidth, display.contentHeight
@@ -49,9 +48,11 @@ function scene:create(event)
         height = ReqHeight,
         numFrames = ReqSteps,
     }
-    local circleImageSheet = graphics.newImageSheet("data/circle.png", options)
+    self.circleImageSheet = graphics.newImageSheet("data/circle.png", options)
 
-    self:createFlowLegal(circleImageSheet)
+    self:createFlowLegal()
+    self:createFlowFlood()
+    self:createFlowUnknown()
 
     self.levelGroup = display.newGroup()
     self.levelGroup.x = 0
@@ -63,41 +64,49 @@ function scene:create(event)
     gameSetupLevel(self.view, self)
 
     self:addUpdate(self.flowLegal.update)
+    self:addUpdate(self.flowFlood.update)
+    self:addUpdate(self.flowUnknown.update)
     self:addUpdate(self.updatePlayer)
 end
 
-function scene:createFlowLegal(circleImageSheet)
+function scene.flowNew()
+    local req = display.newRect(0, 0, ReqWidth, ReqHeight)
+    req.fill = { type = "image", sheet = scene.circleImageSheet, frame = 1 }
+    scene.levelGroup:insert(req)
+    req.anchorX = 0.5
+    req.anchorY = 0.5
+
+    return req
+end
+
+function scene.flowResetFunc(reqType)
+    return function(req, cnt, cntCoeff)
+        req.reqCnt = math.round(cnt * cntCoeff) -- Сохраняю реальное количество запросов, которое обозначает этот спрайт
+        if cnt > ReqSteps then
+            cnt = ReqSteps
+        end
+        req.fill.frame = cnt
+        req.rotation = mathRandom(360)
+
+        req.reqType = reqType
+        req.x = mathRandom(W - ReqWidth) + ReqWidth / 2
+        req.y = const.TopPanelHeight + -mathRandom(ReqWidth * 10) / 10.0
+        req.speed = scene.state.baseReqSpeed + mathRandom(100)
+
+        local color = const.ReqColors[reqType]
+        req:setFillColor(color[1], color[2], color[3])
+    end
+end
+
+function scene:createFlowLegal()
     self.flowLegal = flowNew({
         emitQps = 1,
         maxInFly = UIReqMaxSprites,
         reqSteps = ReqSteps,
 
-        new = function()
-            local req = display.newRect(0, 0, ReqWidth, ReqHeight)
-            req.fill = { type = "image", sheet = circleImageSheet, frame = 1 }
-            scene.levelGroup:insert(req)
-            req.anchorX = 0.5
-            req.anchorY = 0.5
+        new = scene.flowNew,
 
-            return req
-        end,
-
-        reset = function(req, cnt, cntCoeff)
-            req.reqCnt = math.round(cnt * cntCoeff) -- Сохраняю реальное количество запросов, которое обозначает этот спрайт
-            if cnt > ReqSteps then
-                cnt = ReqSteps
-            end
-            req.fill.frame = cnt
-            req.rotation = mathRandom(360)
-
-            req.reqType = const.ReqTypeLegal
-            req.x = mathRandom(W - ReqWidth) + ReqWidth / 2
-            req.y = const.TopPanelHeight + -mathRandom(ReqWidth * 10) / 10.0
-            req.speed = self.state.baseReqSpeed + mathRandom(100)
-
-            local color = const.ReqColors[const.ReqTypeLegal]
-            req:setFillColor(color[1], color[2], color[3])
-        end,
+        reset = scene.flowResetFunc(const.ReqTypeLegal),
 
         deleteFinished = function(reqs)
             local toDeleteReqCnt = 0
@@ -128,6 +137,42 @@ function scene:createFlowLegal(circleImageSheet)
             state.baseReqSpeed = math.min(UIReqMaxSpeed, state.baseReqSpeed + UIReqSpeedupPerSecond * deltaTime)
 
             self.flowLegal.emitQps = state.legalQps
+        end,
+    })
+end
+
+function scene:createFlowFlood()
+    self.flowFlood = flowNew({
+        emitQps = 2,
+        maxInFly = UIReqMaxSprites,
+        reqSteps = ReqSteps,
+
+        new = scene.flowNew,
+
+        reset = scene.flowResetFunc(const.ReqTypeFlood),
+
+        deleteFinished = function(reqs)
+        end,
+
+        update = function(deltaTime)
+        end,
+    })
+end
+
+function scene:createFlowUnknown()
+    self.flowUnknown = flowNew({
+        emitQps = 2,
+        maxInFly = UIReqMaxSprites,
+        reqSteps = ReqSteps,
+
+        new = scene.flowNew,
+
+        reset = scene.flowResetFunc(const.ReqTypeUnknown),
+
+        deleteFinished = function(reqs)
+        end,
+
+        update = function(deltaTime)
         end,
     })
 end
