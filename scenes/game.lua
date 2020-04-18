@@ -8,6 +8,7 @@ local pool = require('libs.pool')
 local gameSetupUI = require('scenes.game_setup_ui')
 local gameSetupLevel = require('scenes.game_setup_level')
 local sceneInternals = require('scenes.scene_internals')
+local panelsLogic = require('scenes.game_panels_logic')
 
 local const = require('scenes.game_constants')
 
@@ -56,11 +57,11 @@ function scene:updateRequests(deltaTime)
     for i = 1, #self.reqInFlight do
         local req = self.reqInFlight[i]
 
-        if req.isVisible and req.reqType ~= const.ReqTypeLegal then
+        if req.isVisible then
             if utils.hasCollidedSquareAndRect(req, self.objs.player) then
-                req.isVisible = false
+                panelsLogic.collideReqWithPanel(req, self.objs.player)
             elseif utils.hasCollidedSquareAndRect(req, self.objs.panelThrottling) then
-                req.isVisible = false
+                panelsLogic.collideReqWithPanel(req, self.objs.panelThrottling)
             end
         end
 

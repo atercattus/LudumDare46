@@ -4,6 +4,7 @@ return function(parent, scene)
     local W, H = display.contentWidth, display.contentHeight
 
     local const = require('scenes.game_constants')
+    local panelsLogic = require('scenes.game_panels_logic')
 
     local colorAvail = { 1, 1, 0.4 }
     local colorUnavail = { 0.8, 0.8, 0.8 }
@@ -33,15 +34,12 @@ return function(parent, scene)
             txt.y = 0
             parent:insert(txt)
 
-            local panel = display.newRect(0, 0, 256, 32)
-            panel.fill = { type = "image", sheet = scene.objs.panelsImageSheet, frame = i }
+            local panel = panelsLogic.newPanel(parent, i)
             panel.x = techXs[i] + (techXs[i + 1] - techXs[i]) / 2
             panel.y = const.TopPanelHeight - 5
-            panel.anchorX = 0.5
             panel.anchorY = 1
             panel.xScale = 0.8
             panel.yScale = 0.8
-            parent:insert(panel)
         end
     end
 
