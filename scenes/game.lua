@@ -14,8 +14,8 @@ local W, H = display.contentWidth, display.contentHeight
 
 --- UI ---
 
-local UIReqMaxLegalSprites = 300 -- Можно сделать настройкой "качество графики" XD
-local UIReqMaxFoodSprites = 500 -- Можно сделать настройкой "качество графики" XD
+local UIReqMaxLegalSprites = 200 -- Можно сделать настройкой "качество графики" XD
+local UIReqMaxFoodSprites = 400 -- Можно сделать настройкой "качество графики" XD
 local UIReqMaxSpeed = 600
 local UIReqSpeedupPerSecond = 1.1
 
