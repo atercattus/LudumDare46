@@ -2,15 +2,18 @@ local M = {}
 
 local const = require('scenes.game_constants')
 
+local w = 256
+local h = 32
+
 local options = {
-    width = 256,
-    height = 32,
+    width = w,
+    height = h,
     numFrames = 5,
 }
 local panelsImageSheet = graphics.newImageSheet("data/panels.png", options)
 
 function M.newPanel(parent, techType)
-    local panel = display.newRect(0, 0, 256, 32)
+    local panel = display.newRect(0, 0, w, h)
     panel.fill = { type = "image", sheet = panelsImageSheet, frame = techType }
     panel.anchorX = 0.5
     panel.anchorY = 0.5

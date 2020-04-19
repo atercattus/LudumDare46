@@ -39,6 +39,7 @@ function scene:create(event)
         serversCnt = 1, -- Общее количество работающих серверов (влияет на LA)
         serverMaxQps = 5000, -- Максимальный QPS, который может обработать один сервер
         legalQps = 1, -- QPS пользовательских запросов (влияет на money)
+        floodQps = 1, -- QPS flood запросов (влияет на money)
         legalQpsSpeedup = 1, -- Прирост legalQps в секунду
         baseReqSpeed = 300, -- Базовая скорость нового запроса
     }
@@ -67,6 +68,7 @@ function scene:create(event)
     self:addUpdate(self.flowFlood.update)
     self:addUpdate(self.flowUnknown.update)
     self:addUpdate(self.updatePlayer)
+    self:addUpdate(self.updateLoadAverage)
 
     self:addUpdate(function(_, deltaTime)
         if self.objs.srvImgPrevTs == nil then
@@ -111,6 +113,20 @@ function scene.flowResetFunc(reqType)
     end
 end
 
+function scene:updateLoadAverage(deltaTime)
+    local state = self.state
+
+    local qps = state.legalQps + state.floodQps
+
+    state.la = math.min(100, 100 * qps / (state.serverMaxQps * state.serversCnt))
+    self:updateLA()
+
+    if self.state.la >= 100 then
+        state.serversCnt = state.serversCnt + 1 -- тестирую :)
+        self:updateServersCount()
+    end
+end
+
 function scene:createFlowLegal()
     self.flowLegal = flowNew({
         emitQps = 1,
@@ -130,14 +146,6 @@ function scene:createFlowLegal()
 
             state.money = state.money + state.CPC * (toDeleteReqCnt / 1000.0) -- CPC читаю за тысячу
             scene:updateMoney()
-
-            scene.state.la = math.min(146, 100 * state.legalQps / (state.serverMaxQps * state.serversCnt))
-            scene:updateLA()
-
-            if scene.state.la >= 100 then
-                state.serversCnt = state.serversCnt + 1 -- тестирую :)
-                scene:updateServersCount()
-            end
         end,
 
         update = function(deltaTime)
@@ -168,7 +176,10 @@ function scene:createFlowFlood()
         end,
 
         update = function(deltaTime)
-            self.flowFlood.emitQps = self.flowFlood.emitQps + self.state.legalQpsSpeedup * deltaTime
+            local state = scene.state
+            state.floodQps = state.floodQps + state.legalQpsSpeedup * deltaTime
+
+            self.flowFlood.emitQps = state.floodQps
         end,
     })
 end

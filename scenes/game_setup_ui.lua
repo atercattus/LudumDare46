@@ -59,13 +59,13 @@ return function(parent, scene)
         bg.anchorY = 0
         bg:setFillColor(0, 0, 0)
 
-        local textParams = { width = 220, font = fontName, fontSize = fontSize, align = 'center' }
+        local textParams = { width = 220, font = fontName, fontSize = 30, align = 'center' }
 
         local techXs = { 20, 240, 460, 680, W }
 
         for i = 1, #const.TechNames do
             local params = textParams
-            params.text = i .. '.' .. const.TechNames[i] .. '\n$' .. const.TechCosts[i]
+            params.text = i .. '. $' .. const.TechCosts[i] ..'\n' .. const.TechNames[i]
             local txt = display.newText(params)
             setColor(txt, colorAvail)
             txt.anchorX = 0
