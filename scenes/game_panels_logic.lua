@@ -22,10 +22,10 @@ function M.newPanel(parent, techType)
     return panel
 end
 
-function M.collideReqWithPanel(req, panel)
-    if req.reqType ~= const.ReqTypeLegal then
-        req.isVisible = false
-    end
-end
+--function M.collideReqWithPanel(req, panel)
+--    if req.reqType ~= const.ReqTypeLegal then
+--        req.isVisible = false
+--    end
+--end
 
 return M

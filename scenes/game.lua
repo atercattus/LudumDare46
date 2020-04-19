@@ -206,23 +206,21 @@ end
 function scene:updatePlayer(deltaTime)
     local x = scene.mousePos.x
     local w = scene.objs.player.width
-    if x < w / 2 then
-        x = w / 2
-    elseif x > W - w / 2 then
-        x = W - w / 2
-    end
+
+    x = math.max(w / 2, math.min(W - w / 2, x))
+
     scene.objs.player.x = x
     scene.objs.playerBuild.x = x
 end
 
-function scene:checkPanelsForReq(req)
-    for j = 1, #self.panels do
-        local panel = self.panels[i]
-        if utils.hasCollidedSquareAndRect(req, panel) then
-            panelsLogic.collideReqWithPanel(req, panel)
-        end
-    end
-end
+--function scene:checkPanelsForReq(req)
+--    for j = 1, #self.panels do
+--        local panel = self.panels[i]
+--        if utils.hasCollidedSquareAndRect(req, panel) then
+--            panelsLogic.collideReqWithPanel(req, panel)
+--        end
+--    end
+--end
 
 sceneInternals(scene)
 
