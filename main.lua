@@ -10,4 +10,6 @@ end
 
 Runtime:addEventListener("unhandledError", myUnhandledErrorListener)
 
+techsLogic = nil
+
 composer.gotoScene("scenes.menu")

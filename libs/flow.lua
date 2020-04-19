@@ -3,7 +3,6 @@ local M = {}
 local poolNew = require('libs.pool').new
 local const = require('scenes.game_constants')
 local utils = require("libs.utils")
-local techLogic = require('scenes.game_techs_logic')
 
 local tableRemove = utils.tableRemove
 
@@ -57,7 +56,7 @@ function M.new(options)
 
         for i, obj in next, inFly do
             if (math.random() < 0.5) and (cbCollision ~= nil) then
-                local collision = techLogic.findCollision(obj, obj.lastCollisionWith)
+                local collision = techsLogic.findCollision(obj, obj.lastCollisionWith)
                 if (collision ~= nil) then
                     obj.lastCollisionWith = collision
                     if cbCollision(obj, collision) then
@@ -65,7 +64,7 @@ function M.new(options)
                         toDeleteObjs[#toDeleteObjs + 1] = obj
 
                         local cnt = obj.reqCnt or 1
-                        techLogic.applyDamage(collision, cnt)
+                        techsLogic.applyDamage(collision, cnt)
                     end
                 end
             end

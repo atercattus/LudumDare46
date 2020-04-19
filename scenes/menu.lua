@@ -9,6 +9,8 @@ local scene = composer.newScene()
 local W, H = display.contentWidth, display.contentHeight
 
 function scene:create(event)
+    techsLogic = require('scenes.game_techs_logic').new()
+
     W, H = display.contentWidth, display.contentHeight
     local sceneGroup = self.view
 
@@ -78,6 +80,6 @@ function scene:update(deltaTime)
     -- ...
 end
 
-sceneInternals(scene)
+sceneInternals.init(scene)
 
 return scene

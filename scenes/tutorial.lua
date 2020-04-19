@@ -4,7 +4,6 @@ local fontName = fontName
 local composer = require("composer")
 local sceneInternals = require('scenes.scene_internals')
 local const = require('scenes.game_constants')
-local panelsLogic = require('scenes.game_techs_logic')
 local utils = require("libs.utils")
 
 local display = display
@@ -78,7 +77,7 @@ function scene:setupUITopPanel()
         txt.y = TOP
         parent:insert(txt)
 
-        local panel = panelsLogic.newTech(parent, i, false)
+        local panel = techsLogic.newTech(parent, i, false)
         panel.x = techXs[i] + (techXs[i + 1] - techXs[i]) / 2
         panel.y = const.TopPanelHeight + TOP
         panel.anchorY = 1
@@ -170,6 +169,6 @@ function scene:update(deltaTime)
     -- ...
 end
 
-sceneInternals(scene)
+sceneInternals.init(scene)
 
 return scene

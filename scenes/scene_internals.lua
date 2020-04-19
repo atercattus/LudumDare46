@@ -1,4 +1,6 @@
-return function(scene)
+local M = {}
+
+function M.init(scene)
     local composer = require("composer")
     local utils = require("libs.utils")
 
@@ -69,6 +71,6 @@ return function(scene)
             scene.updates[i](scene, deltaTime)
         end
     end
-
-
 end
+
+return M

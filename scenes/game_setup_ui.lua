@@ -1,10 +1,11 @@
-return function(parent, scene)
+local M = {}
+
+function M.init(parent, scene)
     local display = display
     local fontName = fontName
     local W, H = display.contentWidth, display.contentHeight
 
     local const = require('scenes.game_constants')
-    local panelsLogic = require('scenes.game_techs_logic')
     local utils = require("libs.utils")
 
     local colorAvail = { 1, 1, 0.4 }
@@ -84,7 +85,7 @@ return function(parent, scene)
             txt.y = 0
             parent:insert(txt)
 
-            local panel = panelsLogic.newTech(parent, i, false)
+            local panel = techsLogic.newTech(parent, i, false)
             panel.x = techXs[i] + (techXs[i + 1] - techXs[i]) / 2
             panel.y = const.TopPanelHeight - 5
             panel.anchorY = 1
@@ -223,3 +224,5 @@ return function(parent, scene)
     setupUITopPanel()
     setupUIBottomPanel()
 end
+
+return M

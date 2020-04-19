@@ -7,7 +7,6 @@ local gameSetupLevel = require('scenes.game_setup_level')
 local sceneInternals = require('scenes.scene_internals')
 
 local const = require('scenes.game_constants')
-local techsLogic = require('scenes.game_techs_logic')
 
 local scene = composer.newScene()
 local mathRandom = math.random
@@ -15,18 +14,21 @@ local W, H = display.contentWidth, display.contentHeight
 
 --- UI ---
 
-local UIReqMaxSprites = 200 -- Можно сделать настройкой "качество графики" XD
+local UIReqMaxLegalSprites = 300 -- Можно сделать настройкой "качество графики" XD
+local UIReqMaxFoodSprites = 500 -- Можно сделать настройкой "качество графики" XD
 local UIReqMaxSpeed = 600
 local UIReqSpeedupPerSecond = 1.1
 
-local LegalQpsSpeedupPerSecond = 1.2
-local FloodQpsSpeedupPerSecond = 0.5
+local LegalQpsSpeedupPerSecond = 1.3
+--local FloodQpsSpeedupPerSecond = 0.5
 
 local TimeToFirstWave = mathRandom(10, 20)
 local WaveDuration = { 10, 30 }
 local IntervalBetweenWaves = { 20, 30 }
 local WaveDensity = { 40, 95 }
 local WaveFloodQpsIncrease = { 20, 100 } -- % от максимальной возможности системы
+
+local OverheatDuration = 5 -- Через сколько секунд перегрева сгорит очередной сервер
 
 function scene:create(event)
     W, H = display.contentWidth, display.contentHeight
@@ -37,7 +39,7 @@ function scene:create(event)
     self.state = {
         startedAt = utils.now(), -- Время начала (сек)
         money = const.StartMoney, -- Денег на счету (нужны для покупки серверов и средств защиты от DDoS)
-        CPC = 2, -- Стоимость каждой 1000 легальных запросов, долетевших до сервера
+        CPC = 4, -- Стоимость каждой 1000 легальных запросов, долетевших до сервера
         la = 0, -- Суммарная нагрузка на все сервера (зависит от суммарного qps, долетающего до серверов)
         serversCnt = 1, -- Общее количество работающих серверов (влияет на LA)
         serverMaxQps = 5000, -- Максимальный QPS, который может обработать один сервер
@@ -64,9 +66,9 @@ function scene:create(event)
     self.levelGroup.y = 0
     self.view:insert(self.levelGroup)
 
-    gameSetupUI(self.view, self)
+    gameSetupUI.init(self.view, self)
 
-    gameSetupLevel(self.view, self)
+    gameSetupLevel.init(self.view, self)
 
     self:addUpdate(function(_, deltaTime)
         techsLogic:moveToTargetPositions(deltaTime)
@@ -226,7 +228,7 @@ function scene:updateLoadAverage()
         if self.overloadFrom == nil then
             self.overloadFrom = now
         end
-        if now - self.overloadFrom > 2 then
+        if now - self.overloadFrom > OverheatDuration then
             self.overloadFrom = now
             self:serversOverloaded()
         end
@@ -237,7 +239,7 @@ end
 
 function scene:serversOverloaded()
     local state = scene.state
-    state.serversCnt = state.serversCnt - 1 -- Сгорел на работе
+    state.serversCnt = math.min(state.serversCnt - 1, math.floor(state.serversCnt * 0.8)) -- Сгорел на работе
     self:updateServersCount()
 
     if state.serversCnt <= 0 then
@@ -248,7 +250,7 @@ end
 function scene:createFlowLegal()
     self.flowLegal = flowNew({
         emitQps = 1,
-        maxInFly = UIReqMaxSprites,
+        maxInFly = UIReqMaxLegalSprites,
         reqSteps = ReqSteps,
 
         new = scene.flowNew,
@@ -283,7 +285,7 @@ end
 function scene:createFlowFlood()
     self.flowFlood = flowNew({
         emitQps = 0.5,
-        maxInFly = 500, --UIReqMaxSprites,
+        maxInFly = UIReqMaxFoodSprites,
         reqSteps = ReqSteps,
 
         new = scene.flowNew,
@@ -321,13 +323,15 @@ function scene:tryBuildTech(techType)
         tech.x = player.x
         tech.y = player.y
         tech.speedY = -H / 2
+        -- ToDo: tech.techDurability умножать на текущую ситуацию, чтобы становилось сильнее со временем
+
     elseif scene.objs.adsTech == nil then
         -- Немного рандома в эту жизнь
         local qpsScale
         if mathRandom() >= 0.95 then
-            qpsScale = 20 -- Может повезло, а может и нет :)
+            qpsScale = 10 -- Может повезло, а может и нет :)
         else
-            qpsScale = mathRandom(4, 10)
+            qpsScale = mathRandom(2, 8)
         end
 
         local tech = techsLogic.newTech(self.view, techType, true, function(t)
@@ -404,6 +408,6 @@ function scene:onKey(event)
     return true
 end
 
-sceneInternals(scene)
+sceneInternals.init(scene)
 
 return scene

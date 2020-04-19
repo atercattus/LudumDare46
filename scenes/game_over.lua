@@ -55,6 +55,6 @@ end
 function scene:update(deltaTime)
 end
 
-sceneInternals(scene)
+sceneInternals.init(scene)
 
 return scene
