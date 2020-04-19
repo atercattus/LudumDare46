@@ -5,6 +5,8 @@ return function(scene)
     scene.mousePos = { x = -1, y = -1 }
     scene.updates = {} -- (scene, deltaTime)
 
+    scene.pressedKeys = {}
+
     function scene:onEnterFrame(event)
         local deltaTime = utils.getDeltaTime(event.time)
         if deltaTime > 0 then
@@ -17,10 +19,13 @@ return function(scene)
     end
 
     local function onMouseEvent(event)
-        --local W, H = display.contentWidth, display.contentHeight
         scene.mousePos.x = event.x
         scene.mousePos.y = event.y
         --self.pressedKeys.mouseLeft = event.isPrimaryButtonDown
+    end
+
+    local function onKey(event)
+        scene:onKey(event)
     end
 
     scene:addEventListener("create", scene)
@@ -30,6 +35,7 @@ return function(scene)
         if (event.phase == "will") then
             Runtime:addEventListener("enterFrame", onEnterFrame)
             Runtime:addEventListener("mouse", onMouseEvent)
+            Runtime:addEventListener("key", onKey)
         end
     end)
 
@@ -37,6 +43,7 @@ return function(scene)
         --if (event.phase == "did") then
         Runtime:removeEventListener("enterFrame", onEnterFrame)
         Runtime:removeEventListener("mouse", onMouseEvent)
+        Runtime:removeEventListener("key", onKey)
         --end
     end)
 

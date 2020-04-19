@@ -5,9 +5,9 @@ local flowNew = require('libs.flow').new
 local gameSetupUI = require('scenes.game_setup_ui')
 local gameSetupLevel = require('scenes.game_setup_level')
 local sceneInternals = require('scenes.scene_internals')
-local techLogic = require('scenes.game_techs_logic')
 
 local const = require('scenes.game_constants')
+local techsLogic = require('scenes.game_techs_logic')
 
 local scene = composer.newScene()
 local mathRandom = math.random
@@ -71,6 +71,7 @@ function scene:create(event)
     self:addUpdate(self.flowUnknown.update)
     self:addUpdate(self.updatePlayer)
     self:addUpdate(self.updateLoadAverage)
+    self:addUpdate(techsLogic.moveToTargetPositions)
 
     -- Мигание лампочек на сервере
     timer.performWithDelay(100, function()
@@ -236,6 +237,37 @@ function scene:createFlowUnknown()
     })
 end
 
+function scene:tryBuildTech(techType)
+    local player = scene.objs.player
+
+    local tech = techsLogic.newTech(self.view, techType, true)
+    tech.x = player.x
+    tech.y = player.y
+    tech.speedY = -H / 2
+
+    return true
+end
+
+function scene:tryBuildAnyTech()
+    local money = scene.state.money + 10000 -- ToDo: тест
+
+    local now = system.getTimer()
+    if scene.lastCreatedTech == nil then
+        scene.lastCreatedTech = 0
+    end
+
+    for techType, techCost in ipairs(const.TechCosts) do
+        if money < techCost then
+        elseif not scene.pressedKeys[techType] then
+        elseif (now - scene.lastCreatedTech) < 1000 then
+            return
+        elseif scene:tryBuildTech(techType) then
+            scene.lastCreatedTech = now
+            break
+        end
+    end
+end
+
 function scene:updatePlayer(deltaTime)
     local x = scene.mousePos.x
     local w = scene.objs.player.width
@@ -243,17 +275,17 @@ function scene:updatePlayer(deltaTime)
     x = math.max(w / 2, math.min(W - w / 2, x))
 
     scene.objs.player.x = x
-    scene.objs.playerBuild.x = x
+
+    scene:tryBuildAnyTech()
 end
 
---function scene:checkPanelsForReq(req)
---    for j = 1, #self.panels do
---        local panel = self.panels[i]
---        if utils.hasCollidedSquareAndRect(req, panel) then
---            panelsLogic.collideReqWithPanel(req, panel)
---        end
---    end
---end
+function scene:onKey(event)
+    if "1" <= event.keyName and event.keyName <= "4" then
+        local num = tonumber(event.keyName)
+        scene.pressedKeys[num] = event.phase == 'down'
+    end
+    return true
+end
 
 sceneInternals(scene)
 
