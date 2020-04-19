@@ -113,12 +113,7 @@ function scene.flowNew()
     return req
 end
 
-function scene.deleteFinished(reqType, reqs)
-    local cnt = 0
-    for _, req in next, reqs do
-        cnt = cnt + req.reqCnt -- Подсчет реального количества запросов, а не числа спрайтов
-    end
-
+function scene.deleteFinished(reqType, cnt)
     local state = scene.state
 
     state.serverQueries = state.serverQueries + cnt
@@ -130,7 +125,7 @@ function scene.deleteFinished(reqType, reqs)
     if reqType == const.ReqTypeLegal then
         state.money = state.money + state.CPC * (cnt / 1000.0) -- CPC читаю за тысячу
     else
-        -- просто нагрузка на сервера
+        -- просто паразитная нагрузка на сервера
     end
 end
 
@@ -152,7 +147,7 @@ function scene:startWaveGenerator()
             -- Забиваем
             local waveBandUsage = mathRandom(WaveFloodQpsIncrease[1], WaveFloodQpsIncrease[2]) / 100
             local waveQpsIncrease = self.state.serversCnt * (self.state.serverMaxQps * waveBandUsage)
-            print('WAVE', (100 * waveBandUsage) .. '%', waveQpsIncrease)
+            print('WAVE', 'band:' .. (100 * waveBandUsage) .. '% density:' .. (100 * self.waveDensity) .. '%')
 
             self.waveFloodQpsBak = self.flowFlood.emitQps
             self.flowFlood.emitQps = waveQpsIncrease
@@ -207,12 +202,12 @@ function scene:updateLoadAverage(deltaTime)
     self:updateLA()
 
     if self.state.la >= 100 then
-        print(qps, state.serverMaxQps * state.serversCnt)
         self:serversOverloaded()
     end
 end
 
 function scene:serversOverloaded(deltaTime)
+    print('OVERLOAD')
     --local state = scene.state
     --state.serversCnt = state.serversCnt + 1 -- тестирую :)
     --self:updateServersCount()
@@ -228,8 +223,8 @@ function scene:createFlowLegal()
 
         reset = scene.flowResetFunc(const.ReqTypeLegal),
 
-        deleteFinished = function(reqs)
-            self.deleteFinished(const.ReqTypeLegal, reqs)
+        deleteFinished = function(cnt)
+            self.deleteFinished(const.ReqTypeLegal, cnt)
         end,
 
         update = function(deltaTime)
@@ -263,8 +258,8 @@ function scene:createFlowFlood()
 
         reset = scene.flowResetFunc(const.ReqTypeFlood),
 
-        deleteFinished = function(reqs)
-            self.deleteFinished(const.ReqTypeFlood, reqs)
+        deleteFinished = function(cnt)
+            self.deleteFinished(const.ReqTypeFlood, cnt)
         end,
 
         update = function(deltaTime)
@@ -296,8 +291,8 @@ function scene:createFlowUnknown()
 
         reset = scene.flowResetFunc(const.ReqTypeUnknown),
 
-        deleteFinished = function(reqs)
-            self.deleteFinished(const.ReqTypeUnknown, reqs)
+        deleteFinished = function(cnt)
+            self.deleteFinished(const.ReqTypeUnknown, cnt)
         end,
 
         update = function(deltaTime)

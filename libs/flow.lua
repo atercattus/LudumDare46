@@ -53,6 +53,8 @@ function M.new(options)
         local toDelete = {}
         local toDeleteObjs = {}
 
+        local finishedRealCnt = 0
+
         for i, obj in next, inFly do
             if (math.random() < 0.5) and (cbCollision ~= nil) then
                 local collision = techLogic.findCollision(obj, obj.lastCollisionWith)
@@ -72,17 +74,23 @@ function M.new(options)
             if obj.y > H - const.BottomPanelHeight then
                 toDelete[#toDelete + 1] = i
                 toDeleteObjs[#toDeleteObjs + 1] = obj
+
+                if obj.reqCnt then
+                    finishedRealCnt = finishedRealCnt + obj.reqCnt
+                end
             end
         end
 
         if #toDelete > 0 then
-            cbDeleteFinished(toDeleteObjs)
-
             for i = #toDelete, 1, -1 do
                 local obj = inFly[toDelete[i]]
                 tableRemove(inFly, toDelete[i])
                 pool:put(obj)
                 obj.isVisible = false
+            end
+
+            if finishedRealCnt > 0 and cbDeleteFinished ~= nil then
+                cbDeleteFinished(finishedRealCnt)
             end
         end
     end
