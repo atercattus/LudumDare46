@@ -1,7 +1,7 @@
 # LudumDare46
 Моя игра для [LudumDare 46](https://ldjam.com/events/ludum-dare/46) с темой "Keep it alive".
 
-![screenshot](screenshots/full.png)
+![gameplay](screenshots/full.png)
 
 В непростых условиях постоянных DDoS так нужно развить свой маленький web сервис, 
 наращивая число серверв и сумму на счету. 
@@ -16,3 +16,7 @@
 CoronaSDK + Aseprite.
 
 [gameplay video](https://www.youtube.com/watch?v=ElEPUS7UlKA)
+
+![menu](screenshots/menu.png)
+
+![tutorial](screenshots/tutorial.png)
