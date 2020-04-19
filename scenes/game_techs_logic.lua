@@ -42,10 +42,32 @@ function M.findCollision(req, ignore)
     return nil
 end
 
+function M.getMinTargetY(tech)
+    local x1, x2, y = tech.x, tech.x + tech.width, tech.y
+
+    local maxY = const.TopPanelHeight + h / 2 + 50
+
+    for _, otherTech in next, techs do
+        if otherTech == tech then
+            -- Это мы же
+        elseif otherTech.y > y then
+            -- Ниже
+        elseif otherTech.x > x2 then
+            -- Правее
+        elseif otherTech.x + otherTech.width < x1 then
+            -- Левее
+        else
+            maxY = math.max(maxY, otherTech.y + h * 1.5)
+        end
+    end
+
+    return maxY
+end
+
 function M.moveToTargetPositions(_, deltaTime)
     for _, tech in next, techs do
         if tech.speedY ~= 0 then
-            local minY = const.TopPanelHeight + tech.height / 2 + 50
+            local minY = M.getMinTargetY(tech)
 
             tech.y = tech.y + tech.speedY * deltaTime
             if tech.y <= minY then
