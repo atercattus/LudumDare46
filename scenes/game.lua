@@ -79,7 +79,7 @@ function scene:create(event)
         techsLogic:moveToTargetPositions(deltaTime)
         techsLogic:markAllUncollided()
 
-        --self.flowLegal:update(deltaTime)
+        self.flowLegal:update(deltaTime)
         self.flowFlood:update(deltaTime)
         --self.flowUnknown:update(deltaTime)
 
@@ -97,7 +97,7 @@ function scene:create(event)
         scene:updateMoney()
     end, -1)
 
-    timer.performWithDelay(1000, self.updateLoadAverage, -1)
+    timer.performWithDelay(500, self.updateLoadAverage, -1)
 
     -- Запуск волн
     scene:startWaveGenerator()
@@ -144,10 +144,25 @@ function scene:startWaveGenerator()
             self.waveDensity = mathRandom(WaveDensity[1], WaveDensity[2]) / 100
             self.waveX = mathRandom(W - self.waveWidth) + self.waveWidth / 2
 
-            -- Забиваем
+            -- Забиваем % канала
             local waveBandUsage = mathRandom(WaveFloodQpsIncrease[1], WaveFloodQpsIncrease[2]) / 100
+
+            -- На первых этапах упрощаю жизнь, на поздних усложняю
+            local waveMode = 'norm'
+            local gameTime = utils.now()
+            if gameTime < 60 then
+                waveMode = 'easy'
+                waveDuration = math.min(10, waveDuration)
+                waveBandUsage = math.min(0.30, waveBandUsage)
+            elseif gameTime > 5 * 60 then
+                waveMode = 'hard'
+                waveDuration = math.max(10, waveDuration)
+                waveBandUsage = math.max(0.50, waveBandUsage)
+            end
+
             local waveQpsIncrease = self.state.serversCnt * (self.state.serverMaxQps * waveBandUsage)
-            print('WAVE', 'band:' .. (100 * waveBandUsage) .. '% density:' .. (100 * self.waveDensity) .. '%')
+
+            print('WAVE [' .. waveMode .. '] band:' .. (100 * waveBandUsage) .. '% density:' .. (100 * self.waveDensity) .. '%')
 
             self.waveFloodQpsBak = self.flowFlood.emitQps
             self.flowFlood.emitQps = waveQpsIncrease
@@ -191,11 +206,19 @@ function scene.flowResetFunc(reqType)
     end
 end
 
-function scene:updateLoadAverage(deltaTime)
+function scene:updateLoadAverage()
     local self = scene
     local state = self.state
 
-    local qps = state.serverQueries
+    if self.updateLoadAverageLastCall == nil then
+        self.updateLoadAverageLastCall = utils.now()
+        return
+    end
+    local now = utils.now()
+    local deltaTime = now - self.updateLoadAverageLastCall
+    self.updateLoadAverageLastCall = now
+
+    local qps = state.serverQueries / deltaTime
     state.serverQueries = 0
 
     state.la = math.min(146, 100 * qps / (state.serverMaxQps * state.serversCnt))
