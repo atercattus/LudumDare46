@@ -1,5 +1,5 @@
 # LudumDare46
-Моя игра для [LudumDare 46](https://ldjam.com/events/ludum-dare/46) с темой "Keep it alive".
+Моя игра для [LudumDare 46](https://ldjam.com/events/ludum-dare/46/ddos-is-coming) с темой "Keep it alive".
 
 ![gameplay](screenshots/full.png)
 
