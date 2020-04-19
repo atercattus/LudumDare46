@@ -152,7 +152,7 @@ function scene:startWaveGenerator()
             -- Забиваем
             local waveBandUsage = mathRandom(WaveFloodQpsIncrease[1], WaveFloodQpsIncrease[2]) / 100
             local waveQpsIncrease = self.state.serversCnt * (self.state.serverMaxQps * waveBandUsage)
-            print('WAVE', 100 * waveBandUsage, '%', waveQpsIncrease)
+            print('WAVE', (100 * waveBandUsage) .. '%', waveQpsIncrease)
 
             self.waveFloodQpsBak = self.flowFlood.emitQps
             self.flowFlood.emitQps = waveQpsIncrease
@@ -172,12 +172,12 @@ function scene:startWaveGenerator()
 end
 
 function scene.flowResetFunc(reqType)
-    return function(req, cnt, cntCoeff)
-        req.reqCnt = cntCoeff --math.round(cnt * cntCoeff) -- Сохраняю реальное количество запросов, которое обозначает этот спрайт
-        if cnt > ReqSteps then
-            cnt = ReqSteps
+    return function(req, visualCnt, realCnt)
+        req.reqCnt = realCnt -- Сохраняю реальное количество запросов, которое обозначает этот спрайт
+        if visualCnt > ReqSteps then
+            visualCnt = ReqSteps
         end
-        req.fill.frame = cnt
+        req.fill.frame = visualCnt
         req.rotation = mathRandom(360)
 
         req.reqType = reqType

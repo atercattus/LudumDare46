@@ -25,9 +25,9 @@ function M.new(options)
     local inFly = {}
     local pool = poolNew(cbNew)
 
-    function F:initNew(cnt, cntCoeff)
+    function F:initNew(visualCnt, realCnt)
         local obj = pool:get()
-        cbReset(obj, cnt, cntCoeff)
+        cbReset(obj, visualCnt, realCnt)
         obj.isVisible = true
         obj.lastCollisionWith = nil
         inFly[#inFly + 1] = obj
@@ -105,28 +105,13 @@ function M.new(options)
             return
         end
 
-        --print('gen', cnt, deltaTime)
+        local realCnt = cnt
 
-        local maxStep = math.min(ReqSteps, math.max(1, math.round(cnt / 10)))
-
-        local lim = UIReqMaxNewPerCall
-
-        local cntCoeff = 1
-        if cnt > lim then
-            cntCoeff = cnt / lim
-            cnt = lim
-        end
-        for step = maxStep, 1, -1 do
-            while (cnt >= 1) and (#inFly < F.maxInFly) do
-                if cntCoeff > 2 then
-                    -- Даже при большом потоке даю шанс выпасть мелкой картинке, чтобы в целом поток выглядил равномернее
-                    local rnd = math.random(step) / step
-                    cntCoeff = cntCoeff / rnd
-                    step = math.max(1, step * rnd)
-                end
-                F:initNew(step, cntCoeff)
-                cnt = cnt - 1
-            end
+        cnt = math.min(cnt, UIReqMaxNewPerCall)
+        for _ = 1, cnt do
+            local thisReqRealCnt = realCnt / cnt
+            local step = math.min(ReqSteps, math.max(1, math.round(thisReqRealCnt / 10)))
+            F:initNew(step, thisReqRealCnt)
         end
     end
 
