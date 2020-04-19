@@ -6,7 +6,7 @@ local utils = require("libs.utils")
 local hasCollidedSquareAndRect = utils.hasCollidedSquareAndRect
 
 local w = 256
-local h = 32
+local h = 36
 
 local options = {
     width = w,
