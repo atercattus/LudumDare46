@@ -5,7 +5,7 @@ local flowNew = require('libs.flow').new
 local gameSetupUI = require('scenes.game_setup_ui')
 local gameSetupLevel = require('scenes.game_setup_level')
 local sceneInternals = require('scenes.scene_internals')
-local panelsLogic = require('scenes.game_panels_logic')
+local techLogic = require('scenes.game_techs_logic')
 
 local const = require('scenes.game_constants')
 
@@ -19,7 +19,7 @@ local ReqWidth = 64
 local ReqHeight = 64
 local ReqSteps = 12
 
-local UIReqMaxSprites = 700 -- Можно сделать настройкой "качество графики" XD
+local UIReqMaxSprites = 200 -- Можно сделать настройкой "качество графики" XD
 local UIReqMaxSpeed = 600
 local UIReqSpeedupPerSecond = 1.1
 
@@ -70,6 +70,7 @@ function scene:create(event)
     self:addUpdate(self.updatePlayer)
     self:addUpdate(self.updateLoadAverage)
 
+    -- Мигание лампочек на сервере
     self:addUpdate(function(_, deltaTime)
         if self.objs.srvImgPrevTs == nil then
             self.objs.srvImgPrevTs = deltaTime
@@ -149,7 +150,6 @@ function scene:createFlowLegal()
         end,
 
         update = function(deltaTime)
-            -- ToDo: self:checkPanelsForReq(req)
             local state = scene.state
 
             state.legalQps = state.legalQps + state.legalQpsSpeedup * deltaTime
@@ -158,6 +158,16 @@ function scene:createFlowLegal()
             state.baseReqSpeed = math.min(UIReqMaxSpeed, state.baseReqSpeed + UIReqSpeedupPerSecond * deltaTime)
 
             self.flowLegal.emitQps = state.legalQps
+        end,
+
+        collision = function(req, tech)
+            local techType = tech.techType
+            if techType == const.TechThrottling then
+                return mathRandom() < const.TechFiltering.Legal_Throttling
+            elseif techType == const.TechFilter then
+                return mathRandom() < const.TechFiltering.Legal_Filter
+            end
+            return false
         end,
     })
 end
@@ -178,8 +188,21 @@ function scene:createFlowFlood()
         update = function(deltaTime)
             local state = scene.state
             state.floodQps = state.floodQps + state.legalQpsSpeedup * deltaTime
+            state.legalQpsSpeedup = state.legalQpsSpeedup + deltaTime * LegalQpsSpeedupPerSecond
 
             self.flowFlood.emitQps = state.floodQps
+        end,
+
+        collision = function(req, tech)
+            local techType = tech.techType
+            if techType == const.TechFirewall then
+                return true
+            elseif techType == const.TechThrottling then
+                return mathRandom() < const.TechFiltering.Flood_Throttling
+            elseif techType == const.TechFilter then
+                return mathRandom() < const.TechFiltering.Flood_Filter
+            end
+            return false
         end,
     })
 end
@@ -199,6 +222,20 @@ function scene:createFlowUnknown()
 
         update = function(deltaTime)
             self.flowUnknown.emitQps = self.flowUnknown.emitQps + self.state.legalQpsSpeedup * deltaTime
+        end,
+
+        collision = function(req, tech)
+            local techType = tech.techType
+            if techType == const.TechFirewall then
+                return true
+            elseif techType == const.TechThrottling then
+                return mathRandom() < const.TechFiltering.Unknown_Throttling
+            elseif techType == const.TechFilter then
+                return mathRandom() < const.TechFiltering.Unknown_Filter
+            elseif techType == const.TechMLDPI then
+                return true -- Нужно заменять на реальный тип, но пока так
+            end
+            return false
         end,
     })
 end

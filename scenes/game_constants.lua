@@ -1,5 +1,5 @@
 local M = {
-        -- UI
+    -- UI
     TopPanelHeight = 100,
     BottomPanelHeight = 150,
 
@@ -16,7 +16,16 @@ local M = {
     TechMLDPI = 4, -- Превращает неизвестный тип в конкретный
     TechBuild = 5, -- Место постройки новой платформы
 
-    TechCosts = {} -- Стоимости использований технологий. Заполняется ниже
+    TechCosts = {}, -- Стоимости использований технологий. Заполняется ниже
+
+    TechFiltering = { -- Вероятности отсева запросов
+        Flood_Throttling = 0.50,
+        Legal_Throttling = 0.50,
+        Unknown_Throttling = 0.50,
+        Flood_Filter = 0.75,
+        Legal_Filter = 0.10,
+        Unknown_Filter = 0.75, -- Считаем этот трафик вредным
+    },
 }
 
 M.ReqColors = {
