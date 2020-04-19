@@ -36,7 +36,7 @@ function scene:create(event)
     titleText.y = H / 2
 
     local phrase = phrases[math.random(#phrases)]
-    local phraseText = display.newText({ text = phrase, width = W, font = fontName, fontSize = 40, align = 'center' })
+    local phraseText = display.newText({ text = '"' .. phrase .. '"', width = W, font = fontName, fontSize = 40, align = 'center' })
     sceneGroup:insert(phraseText)
     phraseText:setFillColor(1, 1, 1)
     phraseText.anchorX = 0.5

@@ -39,16 +39,16 @@ M.ReqColors = {
 M.TechCosts = {
     [M.TechBuyAds] = 100,
     [M.TechThrottling] = 20,
-    [M.TechFilter] = 100,
-    [M.TechFirewall] = 500,
+    [M.TechFilter] = 50,
+    [M.TechFirewall] = 300,
     --[M.TechBuild] = 0,
 }
 
 M.TechDurabilities = {
     [M.TechBuyAds] = 20, -- Время в секундах
-    [M.TechThrottling] = 30 * 1000,
-    [M.TechFilter] = 20 * 1000,
-    [M.TechFirewall] = 15 * 1000,
+    [M.TechThrottling] = 3 * 1000,
+    [M.TechFilter] = 3 * 1000,
+    [M.TechFirewall] = 10 * 1000,
     --[M.TechBuild] = 0,
 }
 
