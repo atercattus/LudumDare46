@@ -39,16 +39,14 @@ function scene:create(event)
     self.panels = {}
     self.objs = {}
     self.state = {
-        startedAt = system.getTimer() / 1000, -- Время начала (сек)
+        startedAt = utils.now(), -- Время начала (сек)
         money = 0, -- Денег на счету (нужны для покупки серверов и средств защиты от DDoS)
         CPC = 2, -- Стоимость каждой 1000 легальных запросов, долетевших до сервера
         la = 0, -- Суммарная нагрузка на все сервера (зависит от суммарного qps, долетающего до серверов)
         serversCnt = 1, -- Общее количество работающих серверов (влияет на LA)
         serverMaxQps = 5000, -- Максимальный QPS, который может обработать один сервер
-        --legalQps = 1, -- QPS пользовательских запросов (влияет на money)
         legalQpsSpeedup = 1, -- Прирост self.flowLegal.emitQps в секунду
         floodQpsSpeedup = 0.2, -- Прирост self.flowFlood.emitQps в секунду
-        unknownQpsSpeedup = 0.2, -- Прирост self.unknownFlood.emitQps в секунду
         baseReqSpeed = 300, -- Базовая скорость нового запроса
 
         serverQueries = 0, -- Сколько запросов долетело до серверов в последний интервал времени
@@ -64,7 +62,6 @@ function scene:create(event)
 
     self:createFlowLegal()
     self:createFlowFlood()
-    self:createFlowUnknown()
 
     self.levelGroup = display.newGroup()
     self.levelGroup.x = 0
@@ -81,7 +78,6 @@ function scene:create(event)
 
         self.flowLegal:update(deltaTime)
         self.flowFlood:update(deltaTime)
-        --self.flowUnknown:update(deltaTime)
 
         techsLogic.processCollided()
     end)
@@ -117,10 +113,6 @@ function scene.deleteFinished(reqType, cnt)
     local state = scene.state
 
     state.serverQueries = state.serverQueries + cnt
-
-    if reqType == const.ReqTypeUnknown then
-        reqType = mathRandom() < 0.4 and const.ReqTypeLegal or const.ReqTypeFlood
-    end
 
     if reqType == const.ReqTypeLegal then
         state.money = state.money + state.CPC * (cnt / 1000.0) -- CPC читаю за тысячу
@@ -298,40 +290,6 @@ function scene:createFlowFlood()
                 return mathRandom() < const.TechFiltering.Flood_Throttling
             elseif techType == const.TechFilter then
                 return mathRandom() < const.TechFiltering.Flood_Filter
-            end
-            return false
-        end,
-    })
-end
-
-function scene:createFlowUnknown()
-    self.flowUnknown = flowNew({
-        emitQps = 2,
-        maxInFly = UIReqMaxSprites,
-        reqSteps = ReqSteps,
-
-        new = scene.flowNew,
-
-        reset = scene.flowResetFunc(const.ReqTypeUnknown),
-
-        deleteFinished = function(cnt)
-            self.deleteFinished(const.ReqTypeUnknown, cnt)
-        end,
-
-        update = function(deltaTime)
-            self.flowUnknown.emitQps = self.flowUnknown.emitQps + 1.2 * deltaTime
-        end,
-
-        collision = function(req, tech)
-            local techType = tech.techType
-            if techType == const.TechFirewall then
-                return true
-            elseif techType == const.TechThrottling then
-                return mathRandom() < const.TechFiltering.Unknown_Throttling
-            elseif techType == const.TechFilter then
-                return mathRandom() < const.TechFiltering.Unknown_Filter
-            elseif techType == const.TechMLDPI then
-                return true -- Нужно заменять на реальный тип, но пока так
             end
             return false
         end,

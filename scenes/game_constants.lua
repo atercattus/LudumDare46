@@ -6,7 +6,6 @@ local M = {
     -- Типы запросов и их параметры
     ReqTypeFlood = 1, -- Флуд запросы
     ReqTypeLegal = 2, -- Легитимные запросы
-    ReqTypeUnknown = 3, -- Неизвестный тип запросов (ML DPI  помощь)
     ReqColors = {}, -- Цвета запросов. Заполняется ниже
 
     -- Способы защиты
@@ -23,17 +22,14 @@ local M = {
     TechFiltering = { -- Вероятности отсева запросов
         Flood_Throttling = 0.50,
         Legal_Throttling = 0.50,
-        Unknown_Throttling = 0.50,
         Flood_Filter = 0.75,
         Legal_Filter = 0.10,
-        Unknown_Filter = 0.75, -- Считаем этот трафик вредным
     },
 }
 
 M.ReqColors = {
     [M.ReqTypeFlood] = { 0.7, 0.0, 0.0 },
     [M.ReqTypeLegal] = { 0, 0.7, 0 },
-    [M.ReqTypeUnknown] = { 0.7, 0.7, 0.7 },
 }
 
 M.TechCosts = {
