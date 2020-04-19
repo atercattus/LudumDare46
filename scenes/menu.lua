@@ -17,17 +17,58 @@ function scene:create(event)
     bg.anchorY = 0
     bg:setFillColor(0, 0, 0)
 
-    local titleText = display.newText({ text = gameName, width = W, font = fontName, fontSize = 90, align = 'center' })
-    sceneGroup:insert(titleText)
-    titleText:setFillColor(1, 1, 0.4)
-    titleText.anchorX = 0.5
-    titleText.anchorY = 0.5
-    titleText.x = W / 2
-    titleText.y = H / 2
+    local texts = { 'Keep', 'yoursite.com', 'alive', 'under DDoS' }
+
+    local txtNext = display.newText({ text = 'Click to continue', width = W, font = fontName, fontSize = 40, align = 'center' })
+    sceneGroup:insert(txtNext)
+    txtNext:setFillColor(0.7, 0.7, 0.7)
+    txtNext.anchorX = 0.5
+    txtNext.anchorY = 1
+    txtNext.x = W / 2
+    txtNext.y = H
+    txtNext.isVisible = false
+
+    local txtAbout = display.newText({ text = 'LudumDare 46', width = W, font = fontName, fontSize = 30, align = 'center' })
+    sceneGroup:insert(txtAbout)
+    txtAbout:setFillColor(0.7, 0.7, 0.7)
+    txtAbout.anchorX = 0.5
+    txtAbout.anchorY = 0
+    txtAbout.x = W / 2
+    txtAbout.y = 0
+    txtAbout.isVisible = false
+
+    local step = H / 8
+    for i, text in next, texts do
+        local isLast = i == #texts
+        local txt = display.newText({ text = text, width = W, font = fontName, fontSize = 90, align = 'center' })
+        sceneGroup:insert(txt)
+        txt:setFillColor(1, 1, 0.4)
+        txt.anchorX = 0.5
+        txt.anchorY = 0.5
+        txt.x = W / 2
+        txt.y = step * (i + 1)
+
+        txt.isVisible = false
+
+        local timeout = 400 * i
+        if isLast then
+            txt:setFillColor(1, 1, 1)
+            timeout = 600 * i
+
+            timer.performWithDelay(timeout, function()
+                txtNext.isVisible = true
+                txtAbout.isVisible = true
+            end, 1)
+        end
+
+        timer.performWithDelay(timeout, function()
+            txt.isVisible = true
+        end, 1)
+    end
 
     bg:addEventListener("touch", function(ev)
         if ev.phase == 'began' then
-            composer.gotoScene('scenes.game')
+            composer.gotoScene('scenes.tutorial')
         end
         return true
     end)

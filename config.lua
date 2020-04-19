@@ -14,3 +14,7 @@ application = {
         fps = 30,
     }
 }
+
+ReqWidth = 64
+ReqHeight = 64
+ReqSteps = 12

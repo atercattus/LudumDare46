@@ -15,10 +15,6 @@ local W, H = display.contentWidth, display.contentHeight
 
 --- UI ---
 
-local ReqWidth = 64
-local ReqHeight = 64
-local ReqSteps = 12
-
 local UIReqMaxSprites = 200 -- Можно сделать настройкой "качество графики" XD
 local UIReqMaxSpeed = 600
 local UIReqSpeedupPerSecond = 1.1
@@ -86,15 +82,15 @@ function scene:create(event)
     self:addUpdate(self.updatePlayer)
 
     -- Мигание лампочек на сервере
-    timer.performWithDelay(100, function()
+    scene:addTimer(timer.performWithDelay(100, function()
         utils.setNextFrame(self.objs.srvImg, self.objs.srvImg.fillFrameCnt)
-    end, -1)
+    end, -1))
 
-    timer.performWithDelay(300, function()
+    scene:addTimer(timer.performWithDelay(300, function()
         scene:updateMoney()
-    end, -1)
+    end, -1))
 
-    timer.performWithDelay(500, self.updateLoadAverage, -1)
+    scene:addTimer(timer.performWithDelay(500, self.updateLoadAverage, -1))
 
     -- Запуск волн
     scene:startWaveGenerator()
@@ -131,7 +127,7 @@ function scene:startWaveGenerator()
 
     local makeWave
     makeWave = function(after)
-        timer.performWithDelay(after, function()
+        local t = timer.performWithDelay(after, function()
             local waveDuration = mathRandom(WaveDuration[1], WaveDuration[2])
 
             self.waveDensity = mathRandom(WaveDensity[1], WaveDensity[2]) / 100
@@ -160,7 +156,7 @@ function scene:startWaveGenerator()
             self.waveFloodQpsBak = self.flowFlood.emitQps
             self.flowFlood.emitQps = waveQpsIncrease
 
-            timer.performWithDelay(waveDuration * 1000, function()
+            local t = timer.performWithDelay(waveDuration * 1000, function()
                 self.waveDensity = 0
 
                 self.flowFlood.emitQps = self.waveFloodQpsBak
@@ -168,7 +164,9 @@ function scene:startWaveGenerator()
                 -- Готовлю следующую волну
                 makeWave(mathRandom(IntervalBetweenWaves[1], IntervalBetweenWaves[2]) * 1000)
             end, 1)
+            scene:addTimer(t)
         end, 1)
+        scene:addTimer(t)
     end
 
     makeWave(TimeToFirstWave * 1000)
@@ -227,6 +225,10 @@ function scene:serversOverloaded(deltaTime)
     --local state = scene.state
     --state.serversCnt = state.serversCnt + 1 -- тестирую :)
     --self:updateServersCount()
+
+    --timer.performWithDelay(3000, function()
+    --    composer.gotoScene('scenes.menu')
+    --end, -1)
 end
 
 function scene:createFlowLegal()

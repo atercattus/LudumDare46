@@ -7,6 +7,12 @@ return function(scene)
 
     scene.pressedKeys = {}
 
+    scene.timers = {}
+
+    function scene:addTimer(timerId)
+        scene.timers[#scene.timers + 1] = timerId
+    end
+
     function scene:onEnterFrame(event)
         local deltaTime = utils.getDeltaTime(event.time)
         if deltaTime > 0 then
@@ -25,12 +31,14 @@ return function(scene)
     end
 
     local function onKey(event)
-        scene:onKey(event)
+        if scene.onKey ~= nil then
+            scene:onKey(event)
+        end
     end
 
     scene:addEventListener("create", scene)
     scene:addEventListener("show", function(event)
-        composer.removeHidden() -- Выгружаю остальные сцены
+        composer.removeHidden(true) -- Выгружаю остальные сцены
 
         if (event.phase == "will") then
             Runtime:addEventListener("enterFrame", onEnterFrame)
@@ -40,6 +48,11 @@ return function(scene)
     end)
 
     scene:addEventListener("hide", function(event)
+        for _, t in next, scene.timers do
+            timer.cancel(t)
+        end
+        scene.timers = {}
+
         --if (event.phase == "did") then
         Runtime:removeEventListener("enterFrame", onEnterFrame)
         Runtime:removeEventListener("mouse", onMouseEvent)
