@@ -24,6 +24,7 @@ local UIReqMaxSpeed = 600
 local UIReqSpeedupPerSecond = 1.1
 
 local LegalQpsSpeedupPerSecond = 1.2
+local FloodQpsSpeedupPerSecond = 1.6
 
 function scene:create(event)
     W, H = display.contentWidth, display.contentHeight
@@ -41,6 +42,7 @@ function scene:create(event)
         legalQps = 1, -- QPS пользовательских запросов (влияет на money)
         floodQps = 1, -- QPS flood запросов (влияет на money)
         legalQpsSpeedup = 1, -- Прирост legalQps в секунду
+        floodQpsSpeedup = 1, -- Прирост floodQps в секунду
         baseReqSpeed = 300, -- Базовая скорость нового запроса
     }
 
@@ -71,18 +73,13 @@ function scene:create(event)
     self:addUpdate(self.updateLoadAverage)
 
     -- Мигание лампочек на сервере
-    self:addUpdate(function(_, deltaTime)
-        if self.objs.srvImgPrevTs == nil then
-            self.objs.srvImgPrevTs = deltaTime
-            return
-        end
-        local ts = self.objs.srvImgPrevTs + deltaTime
-        self.objs.srvImgPrevTs = ts
-        if ts > 0.1 then
-            self.objs.srvImgPrevTs = 0
-            utils.setNextFrame(self.objs.srvImg, self.objs.srvImg.fillFrameCnt)
-        end
-    end)
+    timer.performWithDelay(100, function()
+        utils.setNextFrame(self.objs.srvImg, self.objs.srvImg.fillFrameCnt)
+    end, -1)
+
+    timer.performWithDelay(300, function()
+        scene:updateMoney()
+    end, -1)
 end
 
 function scene.flowNew()
@@ -146,7 +143,6 @@ function scene:createFlowLegal()
             local state = scene.state
 
             state.money = state.money + state.CPC * (toDeleteReqCnt / 1000.0) -- CPC читаю за тысячу
-            scene:updateMoney()
         end,
 
         update = function(deltaTime)
@@ -187,8 +183,8 @@ function scene:createFlowFlood()
 
         update = function(deltaTime)
             local state = scene.state
-            state.floodQps = state.floodQps + state.legalQpsSpeedup * deltaTime
-            state.legalQpsSpeedup = state.legalQpsSpeedup + deltaTime * LegalQpsSpeedupPerSecond
+            state.floodQps = state.floodQps + state.floodQpsSpeedup * deltaTime
+            state.floodQpsSpeedup = state.floodQpsSpeedup + deltaTime * FloodQpsSpeedupPerSecond
 
             self.flowFlood.emitQps = state.floodQps
         end,
@@ -221,7 +217,7 @@ function scene:createFlowUnknown()
         end,
 
         update = function(deltaTime)
-            self.flowUnknown.emitQps = self.flowUnknown.emitQps + self.state.legalQpsSpeedup * deltaTime
+            self.flowUnknown.emitQps = self.flowUnknown.emitQps + 1.2 * deltaTime
         end,
 
         collision = function(req, tech)

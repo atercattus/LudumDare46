@@ -54,7 +54,7 @@ function M.new(options)
         local toDeleteObjs = {}
 
         for i, obj in next, inFly do
-            if cbCollision ~= nil then
+            if (math.random() < 0.5) and (cbCollision ~= nil) then
                 local collision = techLogic.findCollision(obj, obj.lastCollisionWith)
                 if (collision ~= nil) then
                     obj.lastCollisionWith = collision
