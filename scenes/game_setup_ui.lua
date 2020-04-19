@@ -14,6 +14,8 @@ return function(parent, scene)
     local colorLAWarn = { 0.7, 0.5, 0.2 }
     local colorLACrit = { 1.0, 0.2, 0.2 }
 
+    local topPanelCells = {} -- Ячейки с инфой про инструменты и цены
+
     local function setColor(obj, color)
         obj:setFillColor(color[1], color[2], color[3])
     end
@@ -30,11 +32,16 @@ return function(parent, scene)
             precision = 1
         end
 
-        precision = 3
-
         local newText = '$' .. utils.roundStr(scene.state.money, precision)
         if newText ~= scene.objs.txtMoney.text then
             scene.objs.txtMoney.text = newText
+        end
+
+        -- Обновляю UI блоков покупки
+        for _, cell in next, topPanelCells do
+            local avail = money >= const.TechCosts[cell.tech.techType]
+            setColor(cell.txt, avail and colorAvail or colorUnavail)
+            cell.tech.alpha = avail and 1 or 0.3
         end
     end
 
@@ -87,6 +94,11 @@ return function(parent, scene)
             panel.anchorY = 1
             panel.xScale = 0.8
             panel.yScale = 0.8
+
+            topPanelCells[i] = {
+                tech = panel,
+                txt = txt,
+            }
         end
     end
 

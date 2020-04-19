@@ -336,7 +336,7 @@ function scene:tryBuildTech(techType)
 end
 
 function scene:tryBuildAnyTech()
-    local money = scene.state.money + 10000 -- ToDo: тест
+    local money = scene.state.money
 
     local now = system.getTimer()
     if scene.lastCreatedTech == nil then
@@ -350,6 +350,8 @@ function scene:tryBuildAnyTech()
             return
         elseif scene:tryBuildTech(techType) then
             scene.lastCreatedTech = now
+
+            scene.state.money = scene.state.money - techCost
             break
         end
     end
