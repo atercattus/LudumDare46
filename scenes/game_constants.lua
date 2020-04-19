@@ -1,6 +1,6 @@
 local M = {
     -- UI
-    TopPanelHeight = 100,
+    TopPanelHeight = 110,
     BottomPanelHeight = 150,
 
     StartMoney = 300, -- Деньги в начале игры

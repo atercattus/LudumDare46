@@ -67,7 +67,7 @@ return function(parent, scene)
         local bg = display.newRect(parent, 0, 0, W, const.TopPanelHeight)
         bg.anchorX = 0
         bg.anchorY = 0
-        bg:setFillColor(0, 0, 0)
+        bg:setFillColor(0.04, 0.04, 0.04)
 
         local textParams = { width = 220, font = fontName, fontSize = 30, align = 'center' }
 
@@ -103,7 +103,7 @@ return function(parent, scene)
         bg.y = H - bg.height
         bg.anchorX = 0
         bg.anchorY = 0
-        bg:setFillColor(0, 0, 0)
+        bg:setFillColor(0.04, 0.04, 0.04)
 
         local params = { font = fontName, fontSize = 30, align = 'center' }
 
@@ -131,8 +131,7 @@ return function(parent, scene)
         scene:updateLA()
     end
 
-    local function setupUIBottomPanelServersCnt()
-        local w = 100
+    local function setupUIBottomPanelServerIcon(x, w)
         local frameCnt = 4
 
         local options = {
@@ -146,12 +145,42 @@ return function(parent, scene)
         srvImg.fill = { type = "image", sheet = serverImageSheet, frame = 1 }
         srvImg.fillFrameCnt = frameCnt
 
-        local x = 350
         srvImg.x = x
         srvImg.y = H - const.BottomPanelHeight / 2
         srvImg.anchorX = 0.5
         srvImg.anchorY = 0.5
         scene.objs.srvImg = srvImg
+    end
+
+    local function setupUIBottomPanelServerFire(x, w)
+        local frameCnt = 4
+
+        local options = {
+            width = 32,
+            height = 32,
+            numFrames = frameCnt,
+        }
+        local imageSheet = graphics.newImageSheet("data/fire.png", options)
+
+        local srvFireImg = display.newRect(parent, 0, 0, w, w)
+        srvFireImg.fill = { type = "image", sheet = imageSheet, frame = 1 }
+        srvFireImg.fillFrameCnt = frameCnt
+
+        srvFireImg.x = x + 10
+        srvFireImg.y = H - const.BottomPanelHeight * 0.92
+        srvFireImg.anchorX = 0.5
+        srvFireImg.anchorY = 0.5
+        scene.objs.srvFireImg = srvFireImg
+
+        scene.objs.srvFireImg.isVisible = false
+    end
+
+    local function setupUIBottomPanelServersCnt()
+        local w = 100
+        local x = 350
+
+        setupUIBottomPanelServerIcon(x, w)
+        setupUIBottomPanelServerFire(x, 100)
 
         local txtSrvCnt = display.newText({ text = '', width = 300, font = fontName, fontSize = 50, align = 'left' })
         txtSrvCnt.anchorX = 0

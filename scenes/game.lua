@@ -86,6 +86,11 @@ function scene:create(event)
         utils.setNextFrame(self.objs.srvImg, self.objs.srvImg.fillFrameCnt)
     end, -1))
 
+    -- Пожар
+    scene:addTimer(timer.performWithDelay(150, function()
+        utils.setNextFrame(self.objs.srvFireImg, self.objs.srvFireImg.fillFrameCnt)
+    end, -1))
+
     scene:addTimer(timer.performWithDelay(300, function()
         scene:updateMoney()
     end, -1))
@@ -215,20 +220,29 @@ function scene:updateLoadAverage()
     state.la = math.min(146, 100 * qps / (state.serverMaxQps * state.serversCnt))
     self:updateLA()
 
+    self.objs.srvFireImg.isVisible = (self.state.la >= 100)
+
     if self.state.la >= 100 then
-        self:serversOverloaded()
+        if self.overloadFrom == nil then
+            self.overloadFrom = now
+        end
+        if now - self.overloadFrom > 2 then
+            self.overloadFrom = now
+            self:serversOverloaded()
+        end
+    else
+        self.overloadFrom = nil
     end
 end
 
-function scene:serversOverloaded(deltaTime)
-    print('OVERLOAD')
-    --local state = scene.state
-    --state.serversCnt = state.serversCnt + 1 -- тестирую :)
-    --self:updateServersCount()
+function scene:serversOverloaded()
+    local state = scene.state
+    state.serversCnt = state.serversCnt - 1 -- Сгорел на работе
+    self:updateServersCount()
 
-    --timer.performWithDelay(3000, function()
-    --    composer.gotoScene('scenes.menu')
-    --end, -1)
+    if state.serversCnt <= 0 then
+        composer.gotoScene('scenes.game_over')
+    end
 end
 
 function scene:createFlowLegal()
