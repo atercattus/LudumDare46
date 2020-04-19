@@ -4,4 +4,8 @@ settings =
 	{
 		default = "portrait",
 	},
+    excludeFiles =
+    {
+        all = { "builds/*", "screenshots/*", "data/palette.aseprite", "README.md" },
+    },
 }
