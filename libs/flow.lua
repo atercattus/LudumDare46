@@ -10,7 +10,7 @@ local tableRemove = utils.tableRemove
 function M.new(options)
     local F = {}
 
-    local UIReqMaxNewPerCall = 200
+    local UIReqMaxNewPerCall = 4
 
     local cbNew = options.new -- Создание нового объекта
     local cbReset = options.reset -- Перемещение объекта в начальную позицию (может вызываться многократно после одного new)
@@ -19,7 +19,7 @@ function M.new(options)
     local cbCollision = options.collision -- Обработка столкновения
     local ReqSteps = options.reqSteps -- Сколько всего размеров в тайлмапе (специфика это игрушки)
 
-    F.maxInFly = options.maxInFly or 100000 -- Максимальное число спрайтов
+    F.maxInFly = options.maxInFly or 10000 -- Максимальное число спрайтов
     F.emitQps = options.emitQps or 0 -- QPS на создание новых объектов
 
     local inFly = {}
@@ -61,6 +61,9 @@ function M.new(options)
                     if cbCollision(obj, collision) then
                         toDelete[#toDelete + 1] = i
                         toDeleteObjs[#toDeleteObjs + 1] = obj
+
+                        local cnt = obj.reqCnt or 1
+                        techLogic.applyDamage(collision, cnt)
                     end
                 end
             end
@@ -86,6 +89,7 @@ function M.new(options)
 
     function F:updateCreateNew(deltaTime)
         if F.newReqsAccum == nil then
+            -- Для очень низкого QPS позволяет создавать запросы раз в несколько вызовов, накапливая дробный счетчик
             F.newReqsAccum = 0
         end
 
@@ -101,22 +105,27 @@ function M.new(options)
             return
         end
 
+        --print('gen', cnt, deltaTime)
+
+        local maxStep = math.min(ReqSteps, math.max(1, math.round(cnt / 10)))
+
+        local lim = UIReqMaxNewPerCall
+
         local cntCoeff = 1
-        if cnt > UIReqMaxNewPerCall then
-            cntCoeff = cnt / UIReqMaxNewPerCall
-            cnt = UIReqMaxNewPerCall
+        if cnt > lim then
+            cntCoeff = cnt / lim
+            cnt = lim
         end
-        local maxStep = math.min(ReqSteps, math.max(1, cnt / 10))
         for step = maxStep, 1, -1 do
-            while (cnt >= step) and (#inFly < F.maxInFly) do
-                if cnt > 1 then
+            while (cnt >= 1) and (#inFly < F.maxInFly) do
+                if cntCoeff > 2 then
                     -- Даже при большом потоке даю шанс выпасть мелкой картинке, чтобы в целом поток выглядил равномернее
                     local rnd = math.random(step) / step
                     cntCoeff = cntCoeff / rnd
                     step = math.max(1, step * rnd)
                 end
                 F:initNew(step, cntCoeff)
-                cnt = cnt - step
+                cnt = cnt - 1
             end
         end
     end

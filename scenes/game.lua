@@ -24,7 +24,13 @@ local UIReqMaxSpeed = 600
 local UIReqSpeedupPerSecond = 1.1
 
 local LegalQpsSpeedupPerSecond = 1.2
-local FloodQpsSpeedupPerSecond = 1.6
+local FloodQpsSpeedupPerSecond = 0.5
+
+local TimeToFirstWave = mathRandom(10, 20)
+local WaveDuration = { 10, 30 }
+local IntervalBetweenWaves = { 20, 30 }
+local WaveDensity = { 40, 95 }
+local WaveFloodQpsIncrease = { 20, 100 } -- % от максимальной возможности системы
 
 function scene:create(event)
     W, H = display.contentWidth, display.contentHeight
@@ -39,11 +45,14 @@ function scene:create(event)
         la = 0, -- Суммарная нагрузка на все сервера (зависит от суммарного qps, долетающего до серверов)
         serversCnt = 1, -- Общее количество работающих серверов (влияет на LA)
         serverMaxQps = 5000, -- Максимальный QPS, который может обработать один сервер
-        legalQps = 1, -- QPS пользовательских запросов (влияет на money)
-        floodQps = 1, -- QPS flood запросов (влияет на money)
-        legalQpsSpeedup = 1, -- Прирост legalQps в секунду
-        floodQpsSpeedup = 1, -- Прирост floodQps в секунду
+        --legalQps = 1, -- QPS пользовательских запросов (влияет на money)
+        legalQpsSpeedup = 1, -- Прирост self.flowLegal.emitQps в секунду
+        floodQpsSpeedup = 0.2, -- Прирост self.flowFlood.emitQps в секунду
+        unknownQpsSpeedup = 0.2, -- Прирост self.unknownFlood.emitQps в секунду
         baseReqSpeed = 300, -- Базовая скорость нового запроса
+
+        serverQueries = 0, -- Сколько запросов долетело до серверов в последний интервал времени
+        serverQps = 0, -- Какой QPS достигает серверов
     }
 
     local options = {
@@ -66,12 +75,18 @@ function scene:create(event)
 
     gameSetupLevel(self.view, self)
 
-    self:addUpdate(self.flowLegal.update)
-    self:addUpdate(self.flowFlood.update)
-    self:addUpdate(self.flowUnknown.update)
+    self:addUpdate(function(_, deltaTime)
+        techsLogic:moveToTargetPositions(deltaTime)
+        techsLogic:markAllUncollided()
+
+        --self.flowLegal:update(deltaTime)
+        self.flowFlood:update(deltaTime)
+        --self.flowUnknown:update(deltaTime)
+
+        techsLogic.processCollided()
+    end)
+
     self:addUpdate(self.updatePlayer)
-    self:addUpdate(self.updateLoadAverage)
-    self:addUpdate(techsLogic.moveToTargetPositions)
 
     -- Мигание лампочек на сервере
     timer.performWithDelay(100, function()
@@ -81,6 +96,11 @@ function scene:create(event)
     timer.performWithDelay(300, function()
         scene:updateMoney()
     end, -1)
+
+    timer.performWithDelay(1000, self.updateLoadAverage, -1)
+
+    -- Запуск волн
+    scene:startWaveGenerator()
 end
 
 function scene.flowNew()
@@ -93,9 +113,67 @@ function scene.flowNew()
     return req
 end
 
+function scene.deleteFinished(reqType, reqs)
+    local cnt = 0
+    for _, req in next, reqs do
+        cnt = cnt + req.reqCnt -- Подсчет реального количества запросов, а не числа спрайтов
+    end
+
+    local state = scene.state
+
+    state.serverQueries = state.serverQueries + cnt
+
+    if reqType == const.ReqTypeUnknown then
+        reqType = mathRandom() < 0.4 and const.ReqTypeLegal or const.ReqTypeFlood
+    end
+
+    if reqType == const.ReqTypeLegal then
+        state.money = state.money + state.CPC * (cnt / 1000.0) -- CPC читаю за тысячу
+    else
+        -- просто нагрузка на сервера
+    end
+end
+
+function scene:startWaveGenerator()
+    self.waveX = 0
+    self.waveDensity = 0
+    self.waveWidth = W / 8
+
+    self.waveFloodQpsBak = 0
+
+    local makeWave
+    makeWave = function(after)
+        timer.performWithDelay(after, function()
+            local waveDuration = mathRandom(WaveDuration[1], WaveDuration[2])
+
+            self.waveDensity = mathRandom(WaveDensity[1], WaveDensity[2]) / 100
+            self.waveX = mathRandom(W - self.waveWidth) + self.waveWidth / 2
+
+            -- Забиваем
+            local waveBandUsage = mathRandom(WaveFloodQpsIncrease[1], WaveFloodQpsIncrease[2]) / 100
+            local waveQpsIncrease = self.state.serversCnt * (self.state.serverMaxQps * waveBandUsage)
+            print('WAVE', 100 * waveBandUsage, '%', waveQpsIncrease)
+
+            self.waveFloodQpsBak = self.flowFlood.emitQps
+            self.flowFlood.emitQps = waveQpsIncrease
+
+            timer.performWithDelay(waveDuration * 1000, function()
+                self.waveDensity = 0
+
+                self.flowFlood.emitQps = self.waveFloodQpsBak
+
+                -- Готовлю следующую волну
+                makeWave(mathRandom(IntervalBetweenWaves[1], IntervalBetweenWaves[2]) * 1000)
+            end, 1)
+        end, 1)
+    end
+
+    makeWave(TimeToFirstWave * 1000)
+end
+
 function scene.flowResetFunc(reqType)
     return function(req, cnt, cntCoeff)
-        req.reqCnt = math.round(cnt * cntCoeff) -- Сохраняю реальное количество запросов, которое обозначает этот спрайт
+        req.reqCnt = cntCoeff --math.round(cnt * cntCoeff) -- Сохраняю реальное количество запросов, которое обозначает этот спрайт
         if cnt > ReqSteps then
             cnt = ReqSteps
         end
@@ -103,8 +181,14 @@ function scene.flowResetFunc(reqType)
         req.rotation = mathRandom(360)
 
         req.reqType = reqType
-        req.x = mathRandom(W - ReqWidth) + ReqWidth / 2
+
         req.y = const.TopPanelHeight + -mathRandom(ReqWidth * 10) / 10.0
+        req.x = mathRandom(W - ReqWidth) + ReqWidth / 2
+
+        if (reqType == const.ReqTypeFlood) and (mathRandom() < scene.waveDensity) then
+            req.x = scene.waveX + (mathRandom(scene.waveWidth) - scene.waveWidth / 2)
+        end
+
         req.speed = scene.state.baseReqSpeed + mathRandom(100)
 
         local color = const.ReqColors[reqType]
@@ -113,17 +197,25 @@ function scene.flowResetFunc(reqType)
 end
 
 function scene:updateLoadAverage(deltaTime)
+    local self = scene
     local state = self.state
 
-    local qps = state.legalQps + state.floodQps
+    local qps = state.serverQueries
+    state.serverQueries = 0
 
-    state.la = math.min(100, 100 * qps / (state.serverMaxQps * state.serversCnt))
+    state.la = math.min(146, 100 * qps / (state.serverMaxQps * state.serversCnt))
     self:updateLA()
 
     if self.state.la >= 100 then
-        state.serversCnt = state.serversCnt + 1 -- тестирую :)
-        self:updateServersCount()
+        print(qps, state.serverMaxQps * state.serversCnt)
+        self:serversOverloaded()
     end
+end
+
+function scene:serversOverloaded(deltaTime)
+    --local state = scene.state
+    --state.serversCnt = state.serversCnt + 1 -- тестирую :)
+    --self:updateServersCount()
 end
 
 function scene:createFlowLegal()
@@ -137,24 +229,16 @@ function scene:createFlowLegal()
         reset = scene.flowResetFunc(const.ReqTypeLegal),
 
         deleteFinished = function(reqs)
-            local toDeleteReqCnt = 0
-            for _, req in next, reqs do
-                toDeleteReqCnt = toDeleteReqCnt + req.reqCnt -- Подсчет реального количества запросов, а не числа спрайтов
-            end
-            local state = scene.state
-
-            state.money = state.money + state.CPC * (toDeleteReqCnt / 1000.0) -- CPC читаю за тысячу
+            self.deleteFinished(const.ReqTypeLegal, reqs)
         end,
 
         update = function(deltaTime)
             local state = scene.state
 
-            state.legalQps = state.legalQps + state.legalQpsSpeedup * deltaTime
+            self.flowLegal.emitQps = self.flowLegal.emitQps + state.legalQpsSpeedup * deltaTime
             state.legalQpsSpeedup = state.legalQpsSpeedup + deltaTime * LegalQpsSpeedupPerSecond
 
             state.baseReqSpeed = math.min(UIReqMaxSpeed, state.baseReqSpeed + UIReqSpeedupPerSecond * deltaTime)
-
-            self.flowLegal.emitQps = state.legalQps
         end,
 
         collision = function(req, tech)
@@ -171,8 +255,8 @@ end
 
 function scene:createFlowFlood()
     self.flowFlood = flowNew({
-        emitQps = 2,
-        maxInFly = UIReqMaxSprites,
+        emitQps = 0.5,
+        maxInFly = 500, --UIReqMaxSprites,
         reqSteps = ReqSteps,
 
         new = scene.flowNew,
@@ -180,14 +264,12 @@ function scene:createFlowFlood()
         reset = scene.flowResetFunc(const.ReqTypeFlood),
 
         deleteFinished = function(reqs)
+            self.deleteFinished(const.ReqTypeFlood, reqs)
         end,
 
         update = function(deltaTime)
             local state = scene.state
-            state.floodQps = state.floodQps + state.floodQpsSpeedup * deltaTime
-            state.floodQpsSpeedup = state.floodQpsSpeedup + deltaTime * FloodQpsSpeedupPerSecond
-
-            self.flowFlood.emitQps = state.floodQps
+            self.flowFlood.emitQps = self.flowFlood.emitQps + state.floodQpsSpeedup * deltaTime
         end,
 
         collision = function(req, tech)
@@ -215,6 +297,7 @@ function scene:createFlowUnknown()
         reset = scene.flowResetFunc(const.ReqTypeUnknown),
 
         deleteFinished = function(reqs)
+            self.deleteFinished(const.ReqTypeUnknown, reqs)
         end,
 
         update = function(deltaTime)
@@ -259,7 +342,7 @@ function scene:tryBuildAnyTech()
     for techType, techCost in ipairs(const.TechCosts) do
         if money < techCost then
         elseif not scene.pressedKeys[techType] then
-        elseif (now - scene.lastCreatedTech) < 1000 then
+        elseif (now - scene.lastCreatedTech) < 300 then
             return
         elseif scene:tryBuildTech(techType) then
             scene.lastCreatedTech = now

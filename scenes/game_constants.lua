@@ -18,6 +18,8 @@ local M = {
 
     TechCosts = {}, -- Стоимости использований технологий. Заполняется ниже
 
+    TechDurabilities = {}, -- Сколько запросов могут обработать защиты до своей поломки. Заполняется ниже
+
     TechFiltering = { -- Вероятности отсева запросов
         Flood_Throttling = 0.50,
         Legal_Throttling = 0.50,
@@ -39,6 +41,14 @@ M.TechCosts = {
     [M.TechFilter] = 100,
     [M.TechFirewall] = 500,
     [M.TechMLDPI] = 200,
+    --[M.TechBuild] = 0,
+}
+
+M.TechDurabilities = {
+    [M.TechThrottling] = 40 * 1000,
+    [M.TechFilter] = 20 * 1000,
+    [M.TechFirewall] = 5 * 1000,
+    [M.TechMLDPI] = 30 * 1000,
     --[M.TechBuild] = 0,
 }
 

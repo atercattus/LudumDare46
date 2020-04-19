@@ -12,6 +12,11 @@ local systemGetTimer = system.getTimer
 
 local M = {}
 
+-- Время в секундах
+function M.now()
+    return systemGetTimer() / 1000
+end
+
 function M.sqr(v)
     return v * v
 end
