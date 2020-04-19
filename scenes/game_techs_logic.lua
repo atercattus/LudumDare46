@@ -17,7 +17,7 @@ local techsImageSheet = graphics.newImageSheet("data/panels.png", options)
 
 local techs = {}
 
-function M.newTech(parent, techType, collidable)
+function M.newTech(parent, techType, active, removeCb)
     local tech = display.newRect(0, 0, w, h)
     tech.fill = { type = "image", sheet = techsImageSheet, frame = techType }
     tech.anchorX = 0.5
@@ -32,7 +32,8 @@ function M.newTech(parent, techType, collidable)
     tech.txt = txt
     parent:insert(txt)
 
-    if collidable then
+    if active then
+        tech.removeCb = removeCb
         techs[#techs + 1] = tech
     end
 
@@ -43,7 +44,13 @@ function M.markAllUncollided()
     for _, tech in next, techs do
         tech.txt.x = tech.x
         tech.txt.y = tech.y
-        tech.txt.text = tech.techDurability
+
+        -- Для закупки рекламы дополнительно вывожу множитель закупки
+        local txt = ''
+        if tech.qpsScale ~= nil then
+            txt = 'x' .. tech.qpsScale .. ' '
+        end
+        tech.txt.text = txt .. ' ' .. math.floor(tech.techDurability)
 
         tech.isCollided = false
         tech.rotation = 0
@@ -58,10 +65,44 @@ function M.processCollided()
     end
 end
 
+function M.processBuyAds(deltaTime)
+    local toDelete = {}
+
+    local cnt = 1 * deltaTime -- Показывает оставшееся время
+
+    for i, tech in next, techs do
+        if tech.techType == const.TechBuyAds then
+            -- Покупка рекламы всегда в фоне приносит деньги
+            tech.isCollided = true
+            tech.techDurability = tech.techDurability - cnt
+            if tech.techDurability <= 0 then
+                toDelete[#toDelete + 1] = i
+            end
+        end
+    end
+
+    for i = #toDelete, 1, -1 do
+        local idx = toDelete[i]
+        local tech = techs[idx]
+
+        if tech.removeCb ~= nil then
+            tech.removeCb(tech)
+        end
+
+        utils.tableRemove(techs, idx)
+        tech:removeSelf()
+        tech.txt:removeSelf()
+    end
+end
+
 function M.applyDamage(tech, cnt)
     tech.techDurability = tech.techDurability - cnt
     if tech.techDurability > 0 then
         return
+    end
+
+    if tech.removeCb ~= nil then
+        tech.removeCb(tech)
     end
 
     for i, _ in next, techs do
@@ -78,6 +119,9 @@ end
 function M.findCollision(req, ignore)
     for _, tech in next, techs do
         if tech == ignore then
+            -- Этот пропускаем
+        elseif tech.techType == const.TechBuyAds then
+            -- Покупка рекламы просто висит, не взаимодействуя с запросами (она их нагоняет)
         elseif hasCollidedSquareAndRect(req, tech) then
             tech.isCollided = true
             return tech

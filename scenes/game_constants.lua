@@ -3,16 +3,18 @@ local M = {
     TopPanelHeight = 100,
     BottomPanelHeight = 150,
 
+    StartMoney = 300, -- Деньги в начале игры
+
     -- Типы запросов и их параметры
     ReqTypeFlood = 1, -- Флуд запросы
     ReqTypeLegal = 2, -- Легитимные запросы
     ReqColors = {}, -- Цвета запросов. Заполняется ниже
 
-    -- Способы защиты
+    -- Инструменты
     TechThrottling = 1, -- Отбивает половину трафика, не разбирая тип запроса
     TechFilter = 2, -- Отбивает солидную часть флуда, но задевает и легитимный трафик
     TechFirewall = 3, -- Отбивает только флуд (и неизвестный тип?), пропуская легитимный трафик
-    TechMLDPI = 4, -- Превращает неизвестный тип в конкретный
+    TechBuyAds = 4, -- Закупка трафика (умножение трафика).
     TechBuild = 5, -- Место постройки новой платформы
 
     TechCosts = {}, -- Стоимости использований технологий. Заполняется ниже
@@ -33,26 +35,26 @@ M.ReqColors = {
 }
 
 M.TechCosts = {
+    [M.TechBuyAds] = 100,
     [M.TechThrottling] = 20,
     [M.TechFilter] = 100,
     [M.TechFirewall] = 500,
-    [M.TechMLDPI] = 200,
     --[M.TechBuild] = 0,
 }
 
 M.TechDurabilities = {
+    [M.TechBuyAds] = 20, -- Время в секундах
     [M.TechThrottling] = 40 * 1000,
     [M.TechFilter] = 20 * 1000,
     [M.TechFirewall] = 5 * 1000,
-    [M.TechMLDPI] = 30 * 1000,
     --[M.TechBuild] = 0,
 }
 
 M.TechNames = {
+    [M.TechBuyAds] = 'Buy ADs',
     [M.TechThrottling] = 'Throttling',
     [M.TechFilter] = 'Filter',
     [M.TechFirewall] = 'Firewall',
-    [M.TechMLDPI] = 'ML DPI',
     --[M.TechBuild] = '<place for build>',
 }
 

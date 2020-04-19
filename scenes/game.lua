@@ -40,7 +40,7 @@ function scene:create(event)
     self.objs = {}
     self.state = {
         startedAt = utils.now(), -- Время начала (сек)
-        money = 0, -- Денег на счету (нужны для покупки серверов и средств защиты от DDoS)
+        money = const.StartMoney, -- Денег на счету (нужны для покупки серверов и средств защиты от DDoS)
         CPC = 2, -- Стоимость каждой 1000 легальных запросов, долетевших до сервера
         la = 0, -- Суммарная нагрузка на все сервера (зависит от суммарного qps, долетающего до серверов)
         serversCnt = 1, -- Общее количество работающих серверов (влияет на LA)
@@ -79,6 +79,7 @@ function scene:create(event)
         self.flowLegal:update(deltaTime)
         self.flowFlood:update(deltaTime)
 
+        techsLogic.processBuyAds(deltaTime)
         techsLogic.processCollided()
     end)
 
@@ -297,12 +298,39 @@ function scene:createFlowFlood()
 end
 
 function scene:tryBuildTech(techType)
-    local player = scene.objs.player
+    if techType ~= const.TechBuyAds then
+        local player = scene.objs.player
 
-    local tech = techsLogic.newTech(self.view, techType, true)
-    tech.x = player.x
-    tech.y = player.y
-    tech.speedY = -H / 2
+        local tech = techsLogic.newTech(self.view, techType, true)
+        tech.x = player.x
+        tech.y = player.y
+        tech.speedY = -H / 2
+    elseif scene.objs.adsTech == nil then
+        -- Немного рандома в эту жизнь
+        local qpsScale = 0
+        if scene.flowLegal.emitQps < 50 then
+            qpsScale = 50
+        elseif scene.flowLegal.emitQps < 1000 then
+            qpsScale = mathRandom(10, 50)
+        else
+            qpsScale = mathRandom(10, 20)
+        end
+
+        local tech = techsLogic.newTech(self.view, techType, true, function(t)
+            scene.objs.adsTech = nil
+            scene.flowLegal.emitQps = scene.flowLegal.emitQps / qpsScale
+        end)
+
+        tech.x = W / 2
+        tech.y = const.TopPanelHeight + tech.height / 2
+        tech.speedY = 0
+        tech.qpsScale = qpsScale
+        scene.objs.adsTech = tech
+
+        scene.flowLegal.emitQps = scene.flowLegal.emitQps * qpsScale
+    else
+        return false
+    end
 
     return true
 end

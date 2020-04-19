@@ -30,6 +30,8 @@ return function(parent, scene)
             precision = 1
         end
 
+        precision = 3
+
         local newText = '$' .. utils.roundStr(scene.state.money, precision)
         if newText ~= scene.objs.txtMoney.text then
             scene.objs.txtMoney.text = newText
@@ -79,7 +81,7 @@ return function(parent, scene)
             txt.y = 0
             parent:insert(txt)
 
-            local panel = panelsLogic.newTech(parent, i)
+            local panel = panelsLogic.newTech(parent, i, false)
             panel.x = techXs[i] + (techXs[i + 1] - techXs[i]) / 2
             panel.y = const.TopPanelHeight - 5
             panel.anchorY = 1
