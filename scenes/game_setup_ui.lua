@@ -37,8 +37,13 @@ return function(parent, scene)
     end
 
     function scene:updateLA()
-        local la = scene.state.la
-        scene.objs.txtLAValue.text = math.floor(la) .. '%'
+        local la = math.floor(scene.state.la)
+        if (scene.updateLAPrevValue ~= nil) and (scene.updateLAPrevValue == la) then
+            return
+        end
+        scene.updateLAPrevValue = la
+
+        scene.objs.txtLAValue.text = la .. '%'
         local color = colorLAOk
         if la < 60 then
         elseif la < 95 then
@@ -65,7 +70,7 @@ return function(parent, scene)
 
         for i = 1, #const.TechNames do
             local params = textParams
-            params.text = i .. '. $' .. const.TechCosts[i] ..'\n' .. const.TechNames[i]
+            params.text = i .. '. $' .. const.TechCosts[i] .. '\n' .. const.TechNames[i]
             local txt = display.newText(params)
             setColor(txt, colorAvail)
             txt.anchorX = 0
