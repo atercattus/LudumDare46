@@ -5,6 +5,8 @@ local M = {
 
     StartMoney = 300, -- Деньги в начале игры
 
+    NewServerCost = 500, -- Стоимость нового сервера
+
     -- Типы запросов и их параметры
     ReqTypeFlood = 1, -- Флуд запросы
     ReqTypeLegal = 2, -- Легитимные запросы
@@ -24,7 +26,7 @@ local M = {
     TechFiltering = { -- Вероятности отсева запросов
         Flood_Throttling = 0.50,
         Legal_Throttling = 0.50,
-        Flood_Filter = 0.75,
+        Flood_Filter = 0.85,
         Legal_Filter = 0.10,
     },
 }
@@ -44,9 +46,9 @@ M.TechCosts = {
 
 M.TechDurabilities = {
     [M.TechBuyAds] = 20, -- Время в секундах
-    [M.TechThrottling] = 40 * 1000,
+    [M.TechThrottling] = 30 * 1000,
     [M.TechFilter] = 20 * 1000,
-    [M.TechFirewall] = 5 * 1000,
+    [M.TechFirewall] = 15 * 1000,
     --[M.TechBuild] = 0,
 }
 

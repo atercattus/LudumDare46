@@ -23,13 +23,9 @@ return function(parent, scene)
     function scene:updateMoney()
         local money = scene.state.money
 
-        local precision = 0
-        if money < 10 then
-            precision = 3
-        elseif money < 50 then
-            precision = 2
-        elseif money < 100 then
-            precision = 1
+        local precision = 1
+        if money >= 1000 then
+            precision = 0
         end
 
         local newText = '$' .. utils.roundStr(scene.state.money, precision)
@@ -159,13 +155,22 @@ return function(parent, scene)
 
         local txtSrvCnt = display.newText({ text = '', width = 300, font = fontName, fontSize = 50, align = 'left' })
         txtSrvCnt.anchorX = 0
-        txtSrvCnt.anchorY = 1
-        txtSrvCnt.x = x + w / 2
-        txtSrvCnt.y = srvImg.y
+        txtSrvCnt.anchorY = 0.5
+        txtSrvCnt.x = x + w * 0.6
+        txtSrvCnt.y = H - const.BottomPanelHeight / 2
         txtSrvCnt:setFillColor(0.4, 0.4, 1.0)
         parent:insert(txtSrvCnt)
         scene.objs.txtSrvCnt = txtSrvCnt
         scene:updateServersCount()
+
+        local txtSrvByBtn = display.newText({ text = '', width = W, font = fontName, fontSize = 25, align = 'left' })
+        txtSrvByBtn.text = '[SPACE] to buy server for $' .. const.NewServerCost
+        txtSrvByBtn.anchorX = 0
+        txtSrvByBtn.anchorY = 0
+        txtSrvByBtn.x = x + w * 0.6
+        txtSrvByBtn.y = H - const.BottomPanelHeight + txtSrvByBtn.height / 2
+        txtSrvByBtn:setFillColor(0.7, 0.7, 0.7)
+        parent:insert(txtSrvByBtn)
     end
 
     local function setupUIBottomPanelMoney()

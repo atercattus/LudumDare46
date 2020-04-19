@@ -150,7 +150,7 @@ function scene:startWaveGenerator()
             elseif gameTime > 5 * 60 then
                 waveMode = 'hard'
                 waveDuration = math.max(10, waveDuration)
-                waveBandUsage = math.max(0.50, waveBandUsage)
+                waveBandUsage = math.max(0.40, waveBandUsage) + 0.2 -- Может сделать > 100%
             end
 
             local waveQpsIncrease = self.state.serversCnt * (self.state.serverMaxQps * waveBandUsage)
@@ -307,13 +307,11 @@ function scene:tryBuildTech(techType)
         tech.speedY = -H / 2
     elseif scene.objs.adsTech == nil then
         -- Немного рандома в эту жизнь
-        local qpsScale = 0
-        if scene.flowLegal.emitQps < 50 then
-            qpsScale = 50
-        elseif scene.flowLegal.emitQps < 1000 then
-            qpsScale = mathRandom(10, 50)
+        local qpsScale
+        if mathRandom() >= 0.95 then
+            qpsScale = 20 -- Может повезло, а может и нет :)
         else
-            qpsScale = mathRandom(10, 20)
+            qpsScale = mathRandom(4, 10)
         end
 
         local tech = techsLogic.newTech(self.view, techType, true, function(t)
@@ -343,16 +341,27 @@ function scene:tryBuildAnyTech()
         scene.lastCreatedTech = 0
     end
 
+    local buyCooldown = 250
+
     for techType, techCost in ipairs(const.TechCosts) do
         if money < techCost then
         elseif not scene.pressedKeys[techType] then
-        elseif (now - scene.lastCreatedTech) < 300 then
+        elseif (now - scene.lastCreatedTech) < buyCooldown then
             return
         elseif scene:tryBuildTech(techType) then
             scene.lastCreatedTech = now
 
             scene.state.money = scene.state.money - techCost
-            break
+            return
+        end
+    end
+
+    if scene.pressedKeys.space and (money >= const.NewServerCost) then
+        if (now - scene.lastCreatedTech) > buyCooldown then
+            scene.lastCreatedTech = now
+            scene.state.money = scene.state.money - const.NewServerCost
+            scene.state.serversCnt = scene.state.serversCnt + 1
+            scene:updateServersCount()
         end
     end
 end
@@ -372,6 +381,9 @@ function scene:onKey(event)
     if "1" <= event.keyName and event.keyName <= "4" then
         local num = tonumber(event.keyName)
         scene.pressedKeys[num] = event.phase == 'down'
+    end
+    if event.keyName == 'space' then
+        scene.pressedKeys.space = event.phase == 'down'
     end
     return true
 end
